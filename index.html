@@ -98,7 +98,7 @@
 // Nie edytuj recznie - nadpisze to nastepne uruchomienie generatora.
 const KOLEJKA  = "3. kolejka";
 const DEADLINE = "2026-08-07T20:30";
-const WYGEN    = "06.08.2026, 21:32";
+const WYGEN    = "06.08.2026, 21:43";
 const GRUPA    = "";
 const MECZE = [
   ["Wisła Kraków", "Wisła Płock", "pt 7.08, 20:30", 45040, "liga"],
@@ -189,9 +189,17 @@ MECZE.forEach((m, i) => {
   opisy[2].textContent = m[1];
   const btns = box.querySelectorAll("button.p");
   btns.forEach(b => b.addEventListener("click", () => {
+    const bylo = stan.typ[i] === b.dataset.v;
     btns.forEach(x => { x.classList.remove("on"); x.setAttribute("aria-pressed","false"); });
+    if(bylo){
+      stan.typ[i] = null;
+      ih.value = ""; ia.value = ""; stan.hg[i] = ""; stan.ag[i] = "";
+      ist.value = ""; stan.st[i] = 0; ist.disabled = true;
+      zapisz(); pula(); sprawdz(); return;
+    }
     b.classList.add("on"); b.setAttribute("aria-pressed","true");
     stan.typ[i] = b.dataset.v;
+    ist.disabled = false;
     if(ih.value !== "" && ia.value !== ""){
       const h = +ih.value, a = +ia.value;
       const z = h > a ? "1" : (h === a ? "X" : "2");
@@ -217,6 +225,7 @@ MECZE.forEach((m, i) => {
     const b = box.querySelector('button.p[data-v="' + z + '"]');
     b.classList.add("on"); b.setAttribute("aria-pressed","true");
     stan.typ[i] = z;
+    ist.disabled = false;
   }
   ih.addEventListener("input", () => { stan.hg[i] = ih.value; synchronizujZnak(); zapisz(); sprawdz(); });
   ia.addEventListener("input", () => { stan.ag[i] = ia.value; synchronizujZnak(); zapisz(); sprawdz(); });
@@ -226,6 +235,7 @@ MECZE.forEach((m, i) => {
   }
   ih.value = stan.hg[i]; ia.value = stan.ag[i];
   ist.value = stan.st[i] > 0 ? stan.st[i] : "";
+  ist.disabled = (stan.typ[i] === null);
   list.appendChild(box);
 });
 
@@ -235,13 +245,14 @@ $("who").addEventListener("input", e => {
 });
 
 function sprawdz(){
-  const brak = stan.typ.filter(v => v === null).length;
-  const ok = brak === 0 && stan.imie.trim().length > 0 && !zamkniete;
+  const ile = stan.typ.filter(v => v !== null).length;
+  const ok = ile >= 1 && stan.imie.trim().length > 0 && !zamkniete;
   $("go").disabled = !ok; $("copy").disabled = !ok;
   if(zamkniete){ $("hint").textContent = ""; return; }
-  $("hint").textContent = brak > 0
-    ? "Zostało " + brak + (brak === 1 ? " mecz" : brak < 5 ? " mecze" : " meczów")
-    : (stan.imie.trim() ? "Gotowe" : "Wpisz imię");
+  $("hint").textContent = ile === 0
+    ? "Wytypuj przynajmniej jeden mecz — nie musisz wszystkich"
+    : (stan.imie.trim() ? "Wytypowano " + ile + " z " + N + " — możesz wysłać"
+                        : "Wpisz imię");
 }
 
 function stempel(){
@@ -252,15 +263,16 @@ function tekst(){
   const imie = stan.imie.trim();
   let t = imie + " — typy na " + KOLEJKA + " (" + stempel() + ")\n";
   MECZE.forEach((m, i) => {
+    if(stan.typ[i] === null) return;
     const w = (stan.hg[i] !== "" && stan.ag[i] !== "") ? "  " + stan.hg[i] + ":" + stan.ag[i] : "";
     const zt = (+stan.st[i] || 0) > 0 ? "  [" + stan.st[i] + " żet.]" : "";
     t += m[0] + " – " + m[1] + "  " + stan.typ[i] + w + zt + "\n";
   });
   const ids = MECZE.map(m => m[3]).join(",");
-  const znaki = stan.typ.join("");
+  const znaki = stan.typ.map(v => v || "-").join("");
   const wyniki = MECZE.map((m, i) =>
-    (stan.hg[i] !== "" && stan.ag[i] !== "") ? stan.hg[i] + "-" + stan.ag[i] : "").join(",");
-  const stawki = stan.st.map(v => +v || 0).join(",");
+    (stan.typ[i] !== null && stan.hg[i] !== "" && stan.ag[i] !== "") ? stan.hg[i] + "-" + stan.ag[i] : "").join(",");
+  const stawki = stan.st.map((v, i) => stan.typ[i] !== null ? (+v || 0) : 0).join(",");
   t += "\n#" + KOLEJKA.replace(/\D/g,"") + "|" + imie + "|" + znaki + "|" + wyniki
      + "|stawki:" + stawki + "|" + stempel() + "|" + ids;
   return t;
