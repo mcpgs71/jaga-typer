@@ -80,7 +80,7 @@
   <div class="locked" id="locked">Typowanie na tę kolejkę zamknięte — kolejna strona pojawi się w poniedziałek.</div>
 
   <input class="who" id="who" placeholder="Twoje imię" autocomplete="name" maxlength="24">
-  <div class="note">Masz 100 000 żetonów na kolejkę — stawiasz jak w kasynie: trafiony typ płaci wg kursu pod przyciskiem (ustala je mój system, bez marży), saldo liczy się przez cały sezon. Dokładny wynik możesz wpisać dla fantazji, do tabeli liczą się żetony.</div>
+  <div class="note">100 000 żetonów dostajesz na całą rundę — nie odnawiają się co tydzień. W jednej kolejce możesz postawić najwyżej 25 000, czyli ćwiartkę konta. Trafisz — dostajesz stawkę razy kurs spod przycisku. Nie trafisz — stawka przepada. Czego nie postawisz, zostaje na następny tydzień. Kursy liczy model i nie ma w nich prowizji.</div>
   <div class="pula" id="pula"></div>
 
   <div id="list"></div>
@@ -101,8 +101,8 @@
 // sekcja: "liga" | "puchary"; match_id < 0 = mecz pucharowy (-euro_fixture.euro_id)
 // Nie edytuj recznie - nadpisze to nastepne uruchomienie generatora.
 const KOLEJKA  = "3. kolejka";
-const DEADLINE = "2026-08-07T20:30";
-const WYGEN    = "06.08.2026, 22:05";
+const DEADLINE = "2026-08-07T19:30";
+const WYGEN    = "06.08.2026, 23:58";
 const GRUPA    = "";
 const MECZE = [
   ["Wisła Kraków", "Wisła Płock", "pt 7.08, 20:30", 45040, "liga", [2.58, 3.84, 2.84]],
@@ -115,7 +115,11 @@ const MECZE = [
 ];
 // ──────────────────────────────────────────────────────────────────
 
-const PULA = 100000;
+const PULA = 25000;   // limit NA KOLEJKE = 1/4 konta (jaga.limit_gracza).
+                      // W 1. kolejce rundy wszyscy maja pelne konto, wiec
+                      // stala jest dokladna. Pozniej limity sie rozjada -
+                      // strona pokazuje gorny pulap, prawdziwy limit jest
+                      // w poniedzialkowej tabeli, a bramka jest import.
 const fmt = n => n.toLocaleString("pl-PL");
 const KEY = "typer_" + KOLEJKA.replace(/\W/g, "");
 const N = MECZE.length;
@@ -186,7 +190,7 @@ MECZE.forEach((m, i) => {
       '<input type="number" min="0" max="15" inputmode="numeric" aria-label="gole gospodarzy">' +
       ':<input type="number" min="0" max="15" inputmode="numeric" aria-label="gole gości">' +
       '<span class="stx">żetony:</span>' +
-      '<input type="number" min="0" max="100000" step="100" inputmode="numeric" class="st" aria-label="stawka w żetonach" placeholder="0">' +
+      '<input type="number" min="0" max="' + PULA + '" step="100" inputmode="numeric" class="st" aria-label="stawka w żetonach" placeholder="0">' +
     '</div>';
   box.querySelector(".nm").textContent = m[0] + " – " + m[1];
   box.querySelector(".dt").textContent = m[2];
@@ -312,7 +316,7 @@ $("reset").addEventListener("click", () => {
 
 function pula(){
   const suma = stan.st.reduce((s, x) => s + (+x || 0), 0);
-  $("pula").textContent = "Żetony: rozdane " + fmt(suma) + " / " + fmt(PULA) + " · zostało " + fmt(PULA - suma);
+  $("pula").textContent = "Limit na tę kolejkę: rozdane " + fmt(suma) + " / " + fmt(PULA) + " · zostało " + fmt(PULA - suma);
 }
 pula();
 zegar();
