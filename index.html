@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Typer kolejki — Ekstraklasa</title>
+<style>
+  :root{
+    --bg:#0f1522; --panel:#161f31; --track:#222d42; --line:#1c2740;
+    --txt:#f3f4f6; --mut:#8b93a7;
+    --home:#4f8ef7; --away:#ff8a4c; --gold:#ffb454; --wa:#25d366;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+    padding:18px 14px 30px}
+  .wrap{max-width:520px;margin:0 auto}
+  h1{font-size:22px;letter-spacing:.5px;margin:0 0 3px;text-transform:uppercase}
+  .sub{color:var(--mut);font-size:13px}
+  .clock{color:var(--gold);font-size:13px;margin:6px 0 18px;font-variant-numeric:tabular-nums}
+  .who{width:100%;padding:13px 14px;border-radius:10px;border:1px solid var(--line);
+    background:var(--panel);color:var(--txt);font-size:16px;margin-bottom:8px}
+  .who::placeholder{color:var(--mut)}
+  .who.err{border-color:#f0564f}
+  .note{color:var(--mut);font-size:12px;margin-bottom:18px;line-height:1.5}
+  .sekcja{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);
+    margin:22px 0 10px;padding-left:9px;border-left:3px solid var(--gold)}
+  .m{background:var(--panel);border-radius:12px;padding:12px 13px 13px;margin-bottom:10px;
+    border:1px solid var(--line)}
+  .nm{font-size:15px;font-weight:600;margin-bottom:2px}
+  .dt{color:var(--mut);font-size:12px;margin-bottom:10px}
+  .btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+  button.p{padding:11px 4px;border-radius:9px;border:1px solid var(--track);
+    background:var(--track);color:var(--txt);font-size:16px;font-weight:800;cursor:pointer;
+    line-height:1.15;transition:background .12s,border-color .12s}
+  button.p span{display:block;font-weight:400;font-size:11px;color:var(--mut);margin-top:3px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  button.p:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  button.p.on{color:#0f1522}
+  button.p.on span{color:rgba(15,21,34,.75)}
+  button.p[data-v="1"].on{background:var(--home);border-color:var(--home)}
+  button.p[data-v="X"].on{background:#9aa3b5;border-color:#9aa3b5}
+  button.p[data-v="2"].on{background:var(--away);border-color:var(--away)}
+  .exact{display:flex;align-items:center;gap:7px;margin-top:10px;color:var(--mut);font-size:12px}
+  .exact input{width:46px;padding:8px;text-align:center;border-radius:8px;
+    border:1px solid var(--line);background:var(--bg);color:var(--txt);font-size:15px}
+  .exact input:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+  .bar{position:sticky;bottom:0;padding:14px 0 6px;background:linear-gradient(transparent,var(--bg) 25%)}
+  .go{width:100%;padding:16px;border-radius:11px;border:0;background:var(--wa);
+    color:#08210f;font-size:16px;font-weight:800;cursor:pointer;letter-spacing:.3px}
+  .go:disabled{background:var(--track);color:var(--mut);cursor:default}
+  .alt{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:1px solid var(--line);
+    background:transparent;color:var(--mut);font-size:14px;cursor:pointer}
+  .hint{text-align:center;color:var(--mut);font-size:12px;margin-top:9px;min-height:16px}
+  .out{margin-top:12px;background:var(--panel);border:1px solid var(--line);border-radius:11px;
+    padding:12px;font-family:ui-monospace,Consolas,monospace;font-size:12.5px;
+    white-space:pre-wrap;display:none}
+  .locked{background:#2a1416;border:1px solid #f0564f;color:#ffb9b6;border-radius:11px;
+    padding:14px;margin-bottom:16px;font-size:14px;line-height:1.5;display:none}
+  /* strona bez meczow do typowania: zostaje sam komunikat */
+  body.pusto .who,body.pusto .note,body.pusto #list,
+  body.pusto .bar,body.pusto .reset{display:none}
+  .reset{background:none;border:0;color:var(--mut);font-size:12px;text-decoration:underline;
+    cursor:pointer;padding:0;margin-top:14px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Typer kolejki</h1>
+  <div class="sub" id="sub"></div>
+  <div class="clock" id="clock"></div>
+
+  <div class="locked" id="locked">Typowanie na tę kolejkę zamknięte — kolejna strona pojawi się w poniedziałek.</div>
+
+  <input class="who" id="who" placeholder="Twoje imię" autocomplete="name" maxlength="24">
+  <div class="note">Wynik wpisz tylko jeśli chcesz zagrać o 3 punkty. Sam typ 1/X/2 wystarczy, żeby być w tabeli.</div>
+
+  <div id="list"></div>
+
+  <div class="bar">
+    <button class="go" id="go" disabled>Wyślij na WhatsApp</button>
+    <button class="alt" id="copy">Skopiuj zamiast wysyłać</button>
+    <div class="hint" id="hint"></div>
+  </div>
+  <div class="out" id="out"></div>
+  <button class="reset" id="reset">Wyczyść typy</button>
+</div>
+
+<script>
+// ── SEKCJA GENEROWANA PRZEZ sim/gen_typer_html.py ─────────────────
+// Format MECZE: [gospodarz, gosc, termin_czytelny, match_id, sekcja]
+// sekcja: "liga" | "puchary"; match_id < 0 = mecz pucharowy (-euro_fixture.euro_id)
+// Nie edytuj recznie - nadpisze to nastepne uruchomienie generatora.
+const KOLEJKA  = "3. kolejka";
+const DEADLINE = "2026-08-07T20:30";
+const WYGEN    = "06.08.2026, 20:13";
+const GRUPA    = "";
+const MECZE = [
+  ["Wisła Kraków", "Wisła Płock", "pt 7.08, 20:30", 45040, "liga"],
+  ["Radomiak", "Górnik", "sob 8.08, 14:45", 45038, "liga"],
+  ["Pogoń", "Motor", "sob 8.08, 17:30", 45037, "liga"],
+  ["Korona", "Legia", "sob 8.08, 20:15", 45035, "liga"],
+  ["Śląsk", "Cracovia", "nd 9.08, 14:45", 45039, "liga"],
+  ["Lech", "Piast", "nd 9.08, 17:30", 45036, "liga"],
+  ["Jagiellonia", "Widzew", "nd 9.08, 20:15", 45034, "liga"]
+];
+// ──────────────────────────────────────────────────────────────────
+
+const KEY = "typer_" + KOLEJKA.replace(/\W/g, "");
+const N = MECZE.length;
+const stan = {imie:"", typ:new Array(N).fill(null), hg:new Array(N).fill(""), ag:new Array(N).fill("")};
+const $ = id => document.getElementById(id);
+$("sub").textContent = "Ekstraklasa — " + KOLEJKA + " · dane z " + WYGEN;
+
+function zapisz(){ try{ localStorage.setItem(KEY, JSON.stringify(stan)); }catch(e){} }
+(function wczytaj(){
+  try{
+    const s = JSON.parse(localStorage.getItem(KEY) || "null");
+    if(!s || !Array.isArray(s.typ) || s.typ.length !== N) return;
+    stan.imie = s.imie || ""; stan.typ = s.typ;
+    stan.hg = s.hg || stan.hg; stan.ag = s.ag || stan.ag;
+  }catch(e){}
+})();
+
+const koniec = new Date(DEADLINE);
+let zamkniete = false;
+function zegar(){
+  const ms = koniec - new Date();
+  zamkniete = ms <= 0;
+  if(zamkniete){
+    $("clock").textContent = "";
+    $("locked").style.display = "block";
+    document.querySelectorAll("button.p, .exact input, .who").forEach(el => el.disabled = true);
+  }else{
+    const h = Math.floor(ms/3600000), m = Math.floor(ms%3600000/60000);
+    $("clock").textContent = "Do zamknięcia typów: " + (h >= 24
+      ? Math.floor(h/24) + " dni " + (h%24) + " godz."
+      : h + " godz. " + m + " min.");
+  }
+  sprawdz();
+}
+
+// Pusta lista = kolejka wytypowana/rozpoczeta: zostaje sam komunikat,
+// bez formularza i pustego miejsca po meczach.
+if(N === 0){
+  document.body.classList.add("pusto");
+  $("locked").style.display = "block";
+}
+
+const list = $("list");
+let ostatniaSekcja = null;
+MECZE.forEach((m, i) => {
+  if(m[4] !== ostatniaSekcja){
+    ostatniaSekcja = m[4];
+    const s = document.createElement("div");
+    s.className = "sekcja";
+    s.textContent = m[4] === "puchary" ? "Puchary" : "Ekstraklasa — " + KOLEJKA;
+    list.appendChild(s);
+  }
+  const box = document.createElement("div");
+  box.className = "m";
+  // Szkielet bez danych, a nazwy i terminy wstawiane przez textContent.
+  // Nazwy pochodza ze scrapu (rywal pucharowy to wolny tekst) - przez
+  // innerHTML mozna by nimi wstrzyknac HTML, przez textContent nie.
+  box.innerHTML =
+    '<div class="nm"></div>' +
+    '<div class="dt"></div>' +
+    '<div class="btns">' +
+      '<button class="p" data-v="1" aria-pressed="false">1<span></span></button>' +
+      '<button class="p" data-v="X" aria-pressed="false">X<span>remis</span></button>' +
+      '<button class="p" data-v="2" aria-pressed="false">2<span></span></button>' +
+    '</div>' +
+    '<div class="exact">wynik (opcjonalnie): ' +
+      '<input type="number" min="0" max="15" inputmode="numeric" aria-label="gole gospodarzy">' +
+      ':<input type="number" min="0" max="15" inputmode="numeric" aria-label="gole gości">' +
+    '</div>';
+  box.querySelector(".nm").textContent = m[0] + " – " + m[1];
+  box.querySelector(".dt").textContent = m[2];
+  const opisy = box.querySelectorAll("button.p span");   // 1 / X / 2
+  opisy[0].textContent = m[0];
+  opisy[2].textContent = m[1];
+  const btns = box.querySelectorAll("button.p");
+  btns.forEach(b => b.addEventListener("click", () => {
+    btns.forEach(x => { x.classList.remove("on"); x.setAttribute("aria-pressed","false"); });
+    b.classList.add("on"); b.setAttribute("aria-pressed","true");
+    stan.typ[i] = b.dataset.v; zapisz(); sprawdz();
+  }));
+  const [ih, ia] = box.querySelectorAll(".exact input");
+  ih.addEventListener("input", () => { stan.hg[i] = ih.value; zapisz(); });
+  ia.addEventListener("input", () => { stan.ag[i] = ia.value; zapisz(); });
+  if(stan.typ[i]){
+    const b = box.querySelector('button.p[data-v="' + stan.typ[i] + '"]');
+    if(b){ b.classList.add("on"); b.setAttribute("aria-pressed","true"); }
+  }
+  ih.value = stan.hg[i]; ia.value = stan.ag[i];
+  list.appendChild(box);
+});
+
+$("who").value = stan.imie;
+$("who").addEventListener("input", e => {
+  stan.imie = e.target.value; e.target.classList.remove("err"); zapisz(); sprawdz();
+});
+
+function sprawdz(){
+  const brak = stan.typ.filter(v => v === null).length;
+  const ok = brak === 0 && stan.imie.trim().length > 0 && !zamkniete;
+  $("go").disabled = !ok; $("copy").disabled = !ok;
+  if(zamkniete){ $("hint").textContent = ""; return; }
+  $("hint").textContent = brak > 0
+    ? "Zostało " + brak + (brak === 1 ? " mecz" : brak < 5 ? " mecze" : " meczów")
+    : (stan.imie.trim() ? "Gotowe" : "Wpisz imię");
+}
+
+function stempel(){
+  const d = new Date(), p = n => String(n).padStart(2,"0");
+  return p(d.getDate()) + "." + p(d.getMonth()+1) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+}
+function tekst(){
+  const imie = stan.imie.trim();
+  let t = imie + " — typy na " + KOLEJKA + " (" + stempel() + ")\n";
+  MECZE.forEach((m, i) => {
+    const w = (stan.hg[i] !== "" && stan.ag[i] !== "") ? "  " + stan.hg[i] + ":" + stan.ag[i] : "";
+    t += m[0] + " – " + m[1] + "  " + stan.typ[i] + w + "\n";
+  });
+  const ids = MECZE.map(m => m[3]).join(",");
+  const znaki = stan.typ.join("");
+  const wyniki = MECZE.map((m, i) =>
+    (stan.hg[i] !== "" && stan.ag[i] !== "") ? stan.hg[i] + "-" + stan.ag[i] : "").join(",");
+  t += "\n#" + KOLEJKA.replace(/\D/g,"") + "|" + imie + "|" + znaki + "|" + wyniki
+     + "|" + stempel() + "|" + ids;
+  return t;
+}
+
+$("go").addEventListener("click", () => {
+  const url = (GRUPA ? GRUPA + "?text=" : "https://wa.me/?text=") + encodeURIComponent(tekst());
+  window.open(url, "_blank");
+  $("hint").textContent = "Wybierz grupę w WhatsAppie i wyślij";
+});
+$("copy").addEventListener("click", async () => {
+  const t = tekst();
+  $("out").style.display = "block"; $("out").textContent = t;
+  try{ await navigator.clipboard.writeText(t); $("hint").textContent = "Skopiowane"; }
+  catch(e){
+    const r = document.createRange(); r.selectNodeContents($("out"));
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    $("hint").textContent = "Zaznaczone — skopiuj i wklej na grupę";
+  }
+});
+$("reset").addEventListener("click", () => {
+  if(!confirm("Wyczyścić wszystkie typy?")) return;
+  try{ localStorage.removeItem(KEY); }catch(e){}
+  location.reload();
+});
+
+zegar();
+setInterval(zegar, 30000);
+</script>
+</body>
+</html>
