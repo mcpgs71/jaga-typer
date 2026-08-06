@@ -94,7 +94,7 @@
 // Nie edytuj recznie - nadpisze to nastepne uruchomienie generatora.
 const KOLEJKA  = "3. kolejka";
 const DEADLINE = "2026-08-07T20:30";
-const WYGEN    = "06.08.2026, 20:13";
+const WYGEN    = "06.08.2026, 21:09";
 const GRUPA    = "";
 const MECZE = [
   ["Wisła Kraków", "Wisła Płock", "pt 7.08, 20:30", 45040, "liga"],
@@ -184,11 +184,26 @@ MECZE.forEach((m, i) => {
   btns.forEach(b => b.addEventListener("click", () => {
     btns.forEach(x => { x.classList.remove("on"); x.setAttribute("aria-pressed","false"); });
     b.classList.add("on"); b.setAttribute("aria-pressed","true");
-    stan.typ[i] = b.dataset.v; zapisz(); sprawdz();
+    stan.typ[i] = b.dataset.v;
+    if(ih.value !== "" && ia.value !== ""){
+      const h = +ih.value, a = +ia.value;
+      const z = h > a ? "1" : (h === a ? "X" : "2");
+      if(z !== b.dataset.v){ ih.value = ""; ia.value = ""; stan.hg[i] = ""; stan.ag[i] = ""; }
+    }
+    zapisz(); sprawdz();
   }));
   const [ih, ia] = box.querySelectorAll(".exact input");
-  ih.addEventListener("input", () => { stan.hg[i] = ih.value; zapisz(); });
-  ia.addEventListener("input", () => { stan.ag[i] = ia.value; zapisz(); });
+  function synchronizujZnak(){
+    if(ih.value === "" || ia.value === "") return;
+    const h = +ih.value, a = +ia.value;
+    const z = h > a ? "1" : (h === a ? "X" : "2");
+    btns.forEach(x => { x.classList.remove("on"); x.setAttribute("aria-pressed","false"); });
+    const b = box.querySelector('button.p[data-v="' + z + '"]');
+    b.classList.add("on"); b.setAttribute("aria-pressed","true");
+    stan.typ[i] = z;
+  }
+  ih.addEventListener("input", () => { stan.hg[i] = ih.value; synchronizujZnak(); zapisz(); sprawdz(); });
+  ia.addEventListener("input", () => { stan.ag[i] = ia.value; synchronizujZnak(); zapisz(); sprawdz(); });
   if(stan.typ[i]){
     const b = box.querySelector('button.p[data-v="' + stan.typ[i] + '"]');
     if(b){ b.classList.add("on"); b.setAttribute("aria-pressed","true"); }
