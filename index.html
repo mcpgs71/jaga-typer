@@ -45,6 +45,9 @@
   .exact input{width:46px;padding:8px;text-align:center;border-radius:8px;
     border:1px solid var(--line);background:var(--bg);color:var(--txt);font-size:15px}
   .exact input:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+  .stx{margin-left:10px}
+  .exact input.st{width:54px;border-color:#3a4763}
+  .pula{color:var(--gold);font-size:13px;margin:-8px 0 16px;font-variant-numeric:tabular-nums}
   .bar{position:sticky;bottom:0;padding:14px 0 6px;background:linear-gradient(transparent,var(--bg) 25%)}
   .go{width:100%;padding:16px;border-radius:11px;border:0;background:var(--wa);
     color:#08210f;font-size:16px;font-weight:800;cursor:pointer;letter-spacing:.3px}
@@ -74,7 +77,8 @@
   <div class="locked" id="locked">Typowanie na tę kolejkę zamknięte — kolejna strona pojawi się w poniedziałek.</div>
 
   <input class="who" id="who" placeholder="Twoje imię" autocomplete="name" maxlength="24">
-  <div class="note">Wynik wpisz tylko jeśli chcesz zagrać o 3 punkty. Sam typ 1/X/2 wystarczy, żeby być w tabeli.</div>
+  <div class="note">Masz 100 żetonów na kolejkę — stawiasz jak w kasynie: trafiony typ płaci wg kursu bukmacherskiego, saldo liczy się przez cały sezon. Dokładny wynik możesz wpisać dla fantazji, do tabeli liczą się żetony.</div>
+  <div class="pula" id="pula"></div>
 
   <div id="list"></div>
 
@@ -94,7 +98,7 @@
 // Nie edytuj recznie - nadpisze to nastepne uruchomienie generatora.
 const KOLEJKA  = "3. kolejka";
 const DEADLINE = "2026-08-07T20:30";
-const WYGEN    = "06.08.2026, 21:09";
+const WYGEN    = "06.08.2026, 21:32";
 const GRUPA    = "";
 const MECZE = [
   ["Wisła Kraków", "Wisła Płock", "pt 7.08, 20:30", 45040, "liga"],
@@ -109,7 +113,7 @@ const MECZE = [
 
 const KEY = "typer_" + KOLEJKA.replace(/\W/g, "");
 const N = MECZE.length;
-const stan = {imie:"", typ:new Array(N).fill(null), hg:new Array(N).fill(""), ag:new Array(N).fill("")};
+const stan = {imie:"", typ:new Array(N).fill(null), hg:new Array(N).fill(""), ag:new Array(N).fill(""), st:new Array(N).fill(0)};
 const $ = id => document.getElementById(id);
 $("sub").textContent = "Ekstraklasa — " + KOLEJKA + " · dane z " + WYGEN;
 
@@ -120,6 +124,7 @@ function zapisz(){ try{ localStorage.setItem(KEY, JSON.stringify(stan)); }catch(
     if(!s || !Array.isArray(s.typ) || s.typ.length !== N) return;
     stan.imie = s.imie || ""; stan.typ = s.typ;
     stan.hg = s.hg || stan.hg; stan.ag = s.ag || stan.ag;
+    stan.st = (Array.isArray(s.st) && s.st.length === N) ? s.st : stan.st;
   }catch(e){}
 })();
 
@@ -174,6 +179,8 @@ MECZE.forEach((m, i) => {
     '<div class="exact">wynik (opcjonalnie): ' +
       '<input type="number" min="0" max="15" inputmode="numeric" aria-label="gole gospodarzy">' +
       ':<input type="number" min="0" max="15" inputmode="numeric" aria-label="gole gości">' +
+      '<span class="stx">żetony:</span>' +
+      '<input type="number" min="0" max="100" inputmode="numeric" class="st" aria-label="stawka w żetonach" placeholder="0">' +
     '</div>';
   box.querySelector(".nm").textContent = m[0] + " – " + m[1];
   box.querySelector(".dt").textContent = m[2];
@@ -192,7 +199,16 @@ MECZE.forEach((m, i) => {
     }
     zapisz(); sprawdz();
   }));
-  const [ih, ia] = box.querySelectorAll(".exact input");
+  const KEY_st = 0; // marker wersji z zetonami
+  const [ih, ia] = box.querySelectorAll(".exact input:not(.st)");
+  const ist = box.querySelector("input.st");
+  ist.addEventListener("input", () => {
+    let v = ist.value === "" ? 0 : Math.max(0, Math.floor(+ist.value));
+    const innych = stan.st.reduce((s, x, j) => j === i ? s : s + (+x || 0), 0);
+    if (innych + v > 100) { v = 100 - innych; ist.value = v > 0 ? v : ""; }
+    stan.st[i] = ist.value === "" ? 0 : v;
+    zapisz(); pula();
+  });
   function synchronizujZnak(){
     if(ih.value === "" || ia.value === "") return;
     const h = +ih.value, a = +ia.value;
@@ -209,6 +225,7 @@ MECZE.forEach((m, i) => {
     if(b){ b.classList.add("on"); b.setAttribute("aria-pressed","true"); }
   }
   ih.value = stan.hg[i]; ia.value = stan.ag[i];
+  ist.value = stan.st[i] > 0 ? stan.st[i] : "";
   list.appendChild(box);
 });
 
@@ -236,14 +253,16 @@ function tekst(){
   let t = imie + " — typy na " + KOLEJKA + " (" + stempel() + ")\n";
   MECZE.forEach((m, i) => {
     const w = (stan.hg[i] !== "" && stan.ag[i] !== "") ? "  " + stan.hg[i] + ":" + stan.ag[i] : "";
-    t += m[0] + " – " + m[1] + "  " + stan.typ[i] + w + "\n";
+    const zt = (+stan.st[i] || 0) > 0 ? "  [" + stan.st[i] + " żet.]" : "";
+    t += m[0] + " – " + m[1] + "  " + stan.typ[i] + w + zt + "\n";
   });
   const ids = MECZE.map(m => m[3]).join(",");
   const znaki = stan.typ.join("");
   const wyniki = MECZE.map((m, i) =>
     (stan.hg[i] !== "" && stan.ag[i] !== "") ? stan.hg[i] + "-" + stan.ag[i] : "").join(",");
+  const stawki = stan.st.map(v => +v || 0).join(",");
   t += "\n#" + KOLEJKA.replace(/\D/g,"") + "|" + imie + "|" + znaki + "|" + wyniki
-     + "|" + stempel() + "|" + ids;
+     + "|stawki:" + stawki + "|" + stempel() + "|" + ids;
   return t;
 }
 
@@ -268,6 +287,11 @@ $("reset").addEventListener("click", () => {
   location.reload();
 });
 
+function pula(){
+  const suma = stan.st.reduce((s, x) => s + (+x || 0), 0);
+  $("pula").textContent = "Żetony: rozdane " + suma + " / 100 · zostało " + (100 - suma);
+}
+pula();
 zegar();
 setInterval(zegar, 30000);
 </script>
