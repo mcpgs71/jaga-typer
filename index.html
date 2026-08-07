@@ -103,7 +103,7 @@
 // Nie edytuj recznie - nadpisze to nastepne uruchomienie generatora.
 const KOLEJKA  = "3. kolejka";
 const DEADLINE = "2026-08-07T19:30";
-const WYGEN    = "07.08.2026, 00:32";
+const WYGEN    = "07.08.2026, 16:03";
 const GRUPA    = "";
 const MECZE = [
   ["Wisła Kraków", "Wisła Płock", "pt 7.08, 20:30", 45040, "liga", [2.58, 3.84, 2.84]],
@@ -126,7 +126,7 @@ const NA_MECZ = 12500; // limit NA JEDEN MECZ = 1/2 limitu kolejki
                       // strona pokazuje gorny pulap, prawdziwy limit jest
                       // w poniedzialkowej tabeli, a bramka jest import.
 const fmt = n => n.toLocaleString("pl-PL");
-const KEY = "typer_" + KOLEJKA.replace(/\W/g, "");
+const KEY = "typer_r2_" + KOLEJKA.replace(/\W/g, "");   // r2: nowa mechanika limitow, stary zapis ignorowany
 const N = MECZE.length;
 const stan = {imie:"", typ:new Array(N).fill(null), hg:new Array(N).fill(""), ag:new Array(N).fill(""), st:new Array(N).fill(0)};
 const $ = id => document.getElementById(id);
@@ -140,6 +140,16 @@ function zapisz(){ try{ localStorage.setItem(KEY, JSON.stringify(stan)); }catch(
     stan.imie = s.imie || ""; stan.typ = s.typ;
     stan.hg = s.hg || stan.hg; stan.ag = s.ag || stan.ag;
     stan.st = (Array.isArray(s.st) && s.st.length === N) ? s.st : stan.st;
+    // Defensywne przyciecie odtworzonych stawek do AKTUALNYCH limitow -
+    // zapis z poprzedniej wersji mechaniki nie moze zjadac dzisiejszej puli.
+    let pool = 0;
+    stan.st = stan.st.map(v => {
+      let x = Math.max(0, Math.floor(+v || 0));
+      if (x > NA_MECZ) x = NA_MECZ;
+      if (pool + x > PULA) x = Math.max(0, PULA - pool);
+      pool += x;
+      return x;
+    });
   }catch(e){}
 })();
 
