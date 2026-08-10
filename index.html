@@ -66,6 +66,7 @@
   .alt{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:1px solid var(--line);
     background:transparent;color:var(--mut);font-size:14px;cursor:pointer}
   .hint{text-align:center;color:var(--mut);font-size:12px;margin-top:9px;min-height:16px}
+  .hint.wazne{color:var(--gold);font-size:13.5px;font-weight:700}
   .out{margin-top:12px;background:var(--panel);border:1px solid var(--line);border-radius:11px;
     padding:12px;font-family:ui-monospace,Consolas,monospace;font-size:12.5px;
     white-space:pre-wrap;display:none}
@@ -109,8 +110,8 @@
 // sekcja: "liga" | "puchary"; match_id < 0 = mecz pucharowy (-euro_fixture.euro_id)
 // Nie edytuj recznie - nadpisze to nastepne uruchomienie generatora.
 const KOLEJKA  = "4. kolejka";
-const DEADLINE = "2026-08-14T19:30";
-const WYGEN    = "09.08.2026, 23:53";
+const DEADLINE = "2026-08-12T17:00";
+const WYGEN    = "10.08.2026, 20:02";
 const GRUPA    = "";
 const MECZE = [
   ["Legia", "Radomiak", "pt 14.08, 20:30", 45044, "liga", [1.80, 4.28, 4.71], {"1:1":9.20,"2:1":10.14,"2:0":11.52,"1:0":12.16,"3:1":15.65,"1:2":17.33,"3:0":17.79,"2:2":17.84,"0:0":18.83,"0:1":22.14,"3:2":27.56,"4:1":32.24,"0:2":33.67,"4:0":36.63,"1:3":45.77,"2:3":47.10,"4:2":56.72}],
@@ -119,7 +120,12 @@ const MECZE = [
   ["Widzew", "Korona", "sob 15.08, 20:15", 45047, "liga", [2.52, 3.31, 3.31], {"1:1":7.08,"1:0":8.54,"0:0":8.97,"0:1":10.24,"2:1":12.27,"2:0":12.82,"1:2":14.50,"0:2":17.91,"2:2":23.47,"3:1":29.79,"3:0":31.13,"1:3":41.61,"0:3":51.41,"3:2":57.01}],
   ["Motor", "GKS Katowice", "nd 16.08, 14:45", 45045, "liga", [3.00, 4.15, 2.35], {"1:1":9.51,"1:2":11.42,"2:1":13.03,"2:2":14.63,"0:2":17.85,"0:1":17.86,"1:3":19.23,"1:0":20.73,"2:0":23.23,"0:0":23.72,"2:3":24.62,"3:1":25.03,"3:2":28.08,"0:3":30.05,"1:4":43.16,"3:0":44.60,"3:3":47.28,"2:4":55.25,"4:1":64.06}],
   ["Cracovia", "Raków", "nd 16.08, 17:30", 45041, "liga", [3.65, 3.53, 2.26], {"1:1":7.43,"0:1":9.18,"0:0":10.93,"1:2":11.16,"0:2":11.93,"1:0":12.57,"2:1":14.87,"2:2":20.89,"2:0":21.19,"1:3":23.51,"0:3":25.12,"3:1":41.75,"2:3":43.99,"3:2":58.62,"3:0":59.49,"1:4":66.01}],
-  ["Górnik", "Wisła Kraków", "nd 16.08, 20:15", 45042, "liga", [1.80, 4.63, 4.41], {"2:1":10.65,"1:1":10.86,"2:0":14.43,"3:1":14.64,"2:2":15.73,"1:2":17.16,"1:0":17.40,"3:0":19.84,"3:2":21.62,"4:1":26.84,"0:0":28.48,"0:1":29.95,"2:3":34.83,"4:0":36.35,"0:2":37.45,"1:3":38.01,"4:2":39.62,"3:3":47.87,"5:1":61.46}]
+  ["Górnik", "Wisła Kraków", "nd 16.08, 20:15", 45042, "liga", [1.80, 4.63, 4.41], {"2:1":10.65,"1:1":10.86,"2:0":14.43,"3:1":14.64,"2:2":15.73,"1:2":17.16,"1:0":17.40,"3:0":19.84,"3:2":21.62,"4:1":26.84,"0:0":28.48,"0:1":29.95,"2:3":34.83,"4:0":36.35,"0:2":37.45,"1:3":38.01,"4:2":39.62,"3:3":47.87,"5:1":61.46}],
+  ["GKS Katowice", "Hapoel Tel Awiw", "śr 12.08, 18:00 · LK Q3", -10, "puchary", null, null],
+  ["Górnik", "Ferencvarosi TC", "czw 13.08, 19:00 · LE Q3", -6, "puchary", null, null],
+  ["Hammarby IF", "Raków", "czw 13.08, 19:00 · LK Q3", -8, "puchary", null, null],
+  ["KI Klaksvik", "Lech", "czw 13.08, 19:30 · LE Q3", -4, "puchary", null, null],
+  ["Rangers FC", "Jagiellonia", "czw 13.08, 20:30 · LE Q3", -2, "puchary", null, null]
 ];
 // ──────────────────────────────────────────────────────────────────
 
@@ -377,11 +383,17 @@ function sprawdz(){
   const ile = stan.typ.filter(v => v !== null).length;
   const ok = ile >= 1 && stan.imie.trim().length > 0 && !zamkniete;
   $("go").disabled = !ok; $("copy").disabled = !ok;
+  // Typy sa, imienia nie ma: pole imienia jest na gorze, a gracz wlasnie
+  // skonczyl na dole strony - blady hint nie wystarcza (wpadka z testu
+  // na zywo 10.08). Czerwona ramka na polu + wyrazna wskazowka ze strzalka.
+  const brakImienia = ile >= 1 && stan.imie.trim().length === 0 && !zamkniete;
+  $("who").classList.toggle("err", brakImienia);
+  $("hint").classList.toggle("wazne", brakImienia);
   if(zamkniete){ $("hint").textContent = ""; return; }
   $("hint").textContent = ile === 0
     ? "Wytypuj przynajmniej jeden mecz — nie musisz wszystkich"
     : (stan.imie.trim() ? "Wytypowano " + ile + " z " + N + " — wyślij i wybierz naszą grupę"
-                        : "Wpisz imię");
+                        : "Wpisz imię w polu na górze strony ↑");
 }
 
 function stempel(){
