@@ -89,7 +89,7 @@
   <div class="locked" id="locked">Typowanie na tę kolejkę zamknięte — kolejna strona pojawi się w poniedziałek.</div>
 
   <input class="who" id="who" placeholder="Twoje imię" autocomplete="name" maxlength="24">
-  <div class="note">100 000 żetonów dostajesz na całą rundę — nie odnawiają się co tydzień. W jednej kolejce możesz postawić najwyżej 25 000, czyli ćwiartkę konta, a na jeden mecz maksymalnie 12 500 — musisz obstawić co najmniej dwa. Trafisz — dostajesz stawkę razy kurs spod przycisku. Nie trafisz — stawka przepada. Czego nie postawisz, zostaje na następny tydzień. Nowość: wpisz dokładny wynik, a przy meczu pokaże się kurs ruletki — możesz na ten wynik zagrać osobne żetony (maks 2 500 na kolejkę, wliczają się w ćwiartkę). Kursy liczy model i nie ma w nich prowizji.</div>
+  <div class="note">100 000 żetonów dostajesz na całą rundę — nie odnawiają się co tydzień. W jednej kolejce możesz postawić najwyżej ćwiartkę swojego konta, a na jeden mecz połowę tego, co masz na kolejkę — musisz obstawić co najmniej dwa. Ćwiartka liczy się od stanu konta, więc po dobrym tygodniu rośnie, a po słabym maleje: suwaki niżej pokazują 25 000, czyli ćwiartkę konta na starcie rundy, i jeśli jesteś pod kreską, twój rzeczywisty limit jest niższy — nadwyżka zostanie proporcjonalnie przycięta przy rozliczeniu, typy zostają w grze. Dokładny stan konta i limit masz w cotygodniowym raporcie. Trafisz — dostajesz stawkę razy kurs spod przycisku. Nie trafisz — stawka przepada. Czego nie postawisz, zostaje na następny tydzień. Nowość: wpisz dokładny wynik, a przy meczu pokaże się kurs ruletki — możesz na ten wynik zagrać osobne żetony (maks dziesiąta część limitu kolejki, wliczają się w ćwiartkę). Kursy liczy model i nie ma w nich prowizji.</div>
   <div class="pula" id="pula"></div>
 
   <div id="list"></div>
@@ -111,7 +111,7 @@
 // Nie edytuj recznie - nadpisze to nastepne uruchomienie generatora.
 const KOLEJKA  = "4. kolejka";
 const DEADLINE = "2026-08-14T19:30";
-const WYGEN    = "10.08.2026, 20:12";
+const WYGEN    = "10.08.2026, 23:38";
 const GRUPA    = "";
 const MECZE = [
   ["Legia", "Radomiak", "pt 14.08, 20:30", 45044, "liga", [1.80, 4.28, 4.71], {"1:1":9.20,"2:1":10.14,"2:0":11.52,"1:0":12.16,"3:1":15.65,"1:2":17.33,"3:0":17.79,"2:2":17.84,"0:0":18.83,"0:1":22.14,"3:2":27.56,"4:1":32.24,"0:2":33.67,"4:0":36.63,"1:3":45.77,"2:3":47.10,"4:2":56.72}],
