@@ -126,7 +126,7 @@
 // Nie edytuj recznie - nadpisze to nastepne uruchomienie generatora.
 const KOLEJKA  = "5. kolejka";
 const DEADLINE = "2026-08-21T19:30";
-const WYGEN    = "17.08.2026, 11:19";
+const WYGEN    = "17.08.2026, 17:09";
 const GRUPA    = "";
 const MECZE = [
   ["Cracovia", "Wieczysta", "pt 21.08, 20:30", 45050, "liga", [1.85, 4.53, 4.21], {"1:1":10.50,"2:1":10.60,"2:0":14.36,"3:1":15.08,"2:2":15.65,"1:2":16.50,"1:0":16.61,"3:0":20.42,"3:2":22.26,"0:0":26.93,"0:1":27.32,"4:1":28.60,"2:3":34.65,"0:2":34.81,"1:3":36.55,"4:0":38.74,"4:2":42.21,"3:3":49.29}],
@@ -451,17 +451,43 @@ function wynikiBezZetonow(){
   return lista;
 }
 
+// Awaryjna sciezka wysylki: pokaz tekst kuponu i wrzuc go do schowka.
+// Uzywana i przez przycisk "Skopiuj", i przez "Wyslij", gdy przegladarka
+// mimo wszystko zablokuje okienko - zeby klikajacy nigdy nie zostal
+// z martwym przyciskiem i przekonaniem, ze kupon poszedl.
+async function pokazISkopiuj(prefiks){
+  const t = tekst();
+  $("out").style.display = "block"; $("out").textContent = t;
+  try{
+    await navigator.clipboard.writeText(t);
+    $("hint").textContent = prefiks + "Skopiowane — wklej na grupę";
+  }catch(e){
+    const r = document.createRange(); r.selectNodeContents($("out"));
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    $("hint").textContent = prefiks + "Zaznaczone — skopiuj i wklej na grupę";
+  }
+}
+
 $("go").addEventListener("click", () => {
   const bez = wynikiBezZetonow();
+  // BLOKADA POPUPU (zgloszenie 17.08, Edge): confirm() KONCZY gest
+  // uzytkownika, wiec window.open wolany PO nim nie jest juz "klikiem"
+  // i przegladarka go blokuje - przycisk przestawal cokolwiek robic.
+  // Okno otwieramy wiec od razu, jeszcze w gescie, a adres podstawiamy
+  // dopiero po odpowiedzi na pytanie. Anulowanie zamyka pusta karte.
+  const okno = bez.length ? window.open("", "_blank") : null;
   if (bez.length && !confirm(
       "Masz wpisany wynik BEZ żetonów na ruletkę przy: " + bez.join(", ") +
       ".\n\nWynik bez żetonów NIE wygrywa nic — liczy się tylko do " +
       "rozstrzygnięcia remisu kont.\n\nWysłać mimo to?")) {
+    if (okno) okno.close();
     $("hint").textContent = "Kupon nie wysłany — dołóż żetony na wynik albo wyślij ponownie.";
     return;
   }
   const url = (GRUPA ? GRUPA + "?text=" : "https://wa.me/?text=") + encodeURIComponent(tekst());
-  window.open(url, "_blank");
+  const cel = okno || window.open(url, "_blank");
+  if (!cel) { pokazISkopiuj("Przeglądarka zablokowała okienko. "); return; }
+  if (okno) okno.location.href = url;
   $("hint").textContent = "WhatsApp otwarty — wybierz naszą grupę z listy i wyślij";
 });
 $("copy").addEventListener("click", async () => {
@@ -473,14 +499,7 @@ $("copy").addEventListener("click", async () => {
     $("hint").textContent = "Nie skopiowane — dołóż żetony na wynik albo skopiuj ponownie.";
     return;
   }
-  const t = tekst();
-  $("out").style.display = "block"; $("out").textContent = t;
-  try{ await navigator.clipboard.writeText(t); $("hint").textContent = "Skopiowane"; }
-  catch(e){
-    const r = document.createRange(); r.selectNodeContents($("out"));
-    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
-    $("hint").textContent = "Zaznaczone — skopiuj i wklej na grupę";
-  }
+  await pokazISkopiuj("");
 });
 $("reset").addEventListener("click", () => {
   if(!confirm("Wyczyścić wszystkie typy?")) return;
