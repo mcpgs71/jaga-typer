@@ -33,7 +33,48 @@
   <button class="copy" id="cp">Skopiuj zamiast wysyłać</button>
   <div class="out" id="out"></div>
   <div class="rules">1 = gospodarz, X = remis, 2 = gość — jak na typerze. Wynik gospodarz:gość. Kto nie wpisze wyniku, gra tylko znak.</div>
+
+  <h2 style="font-size:17px;margin:28px 0 4px">Tabela przerywnika</h2>
+  <div class="sub" id="tsub">typy zebrane do pt 20:00 · aktualizacja po każdym meczu</div>
+  <div id="tabela"></div>
+  <div id="szcz"></div>
 </div>
+<script>
+// ===== DANE (aktualizowane recznie po kazdym meczu) =====
+// typy: [znak, "h:a" lub null] w kolejnosci meczow; wyniki: "h:a" lub null
+const DANE = {
+  gracze: {
+    "Marcin": [["1","2:1"],["1","2:1"],["1","1:0"],["X","1:1"]],
+    "Paulo":  [["1","3:1"],["X","1:1"],["1","2:1"],["2","0:1"]],
+    "Piotr":  [["1","1:0"],["1","2:0"],["1","2:1"],["X","1:1"]]
+  },
+  wyniki: [null, null, null, null],
+  skrot: ["Pol–Boś","Szw–Pol","Pol–Rum","Boś–Pol"]
+};
+// ===== koniec DANE =====
+(function(){
+  const zn=w=>{const [h,a]=w.split(':').map(Number);return h>a?'1':(h<a?'2':'X');};
+  const pkt=(t,w)=>{if(!w||!t||!t[0])return null;let p=(t[0]===zn(w))?1:0;if(t[1]&&t[1]===w)p+=3;return p;};
+  const rows=Object.entries(DANE.gracze).map(([n,t])=>{
+    const p=t.map((x,i)=>pkt(x,DANE.wyniki[i]));
+    return {n,t,p,sum:p.reduce((s,v)=>s+(v||0),0)};
+  }).sort((a,b)=>b.sum-a.sum||a.n.localeCompare(b.n));
+  const roz=DANE.wyniki.filter(Boolean).length;
+  document.getElementById('tsub').textContent = roz? `po ${roz} z 4 meczów · wyniki: `+DANE.wyniki.map((w,i)=>w?`${DANE.skrot[i]} ${w}`:null).filter(Boolean).join(' · ')
+                                                   : `${rows.length} graczy · typy zebrane do pt 25.09 20:00 · aktualizacja po każdym meczu`;
+  const th=`<tr><th style="text-align:left">Gracz</th>${DANE.skrot.map(s=>`<th>${s}</th>`).join('')}<th>Pkt</th></tr>`;
+  const tr=rows.map((r,i)=>`<tr><td style="text-align:left;font-weight:${i===0&&roz?'700':'400'}">${r.n}</td>`+
+     r.t.map((x,j)=>{const c=x[0]+(x[1]?' '+x[1]:'');const p=r.p[j];
+       const col=p===null?'var(--mut)':(p>=3?'var(--ok)':(p===1?'#9ad1ff':'#f06060'));
+       return `<td style="color:${col}">${c}${p!==null?` <small>+${p}</small>`:''}</td>`;}).join('')+
+     `<td style="font-weight:700">${r.sum}</td></tr>`).join('');
+  document.getElementById('tabela').innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:13px;text-align:center">${th}${tr}</table>`;
+})();
+</script>
+<style>
+  table td,table th{padding:7px 4px;border-bottom:1px solid #222a3a} table th{color:var(--mut);font-weight:600;font-size:12px}
+</style>
+
 <script>
 const M=[["Polska – Bośnia i Hercegowina","pt 25.09, 20:45 · Warszawa"],
          ["Szwecja – Polska","pn 28.09, 20:45 · Solna"],
