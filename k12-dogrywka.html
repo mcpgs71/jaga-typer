@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Typer kolejki — Ekstraklasa</title>
+<style>
+  :root{
+    --bg:#0f1522; --panel:#161f31; --track:#222d42; --line:#1c2740;
+    --txt:#f3f4f6; --mut:#8b93a7;
+    --home:#4f8ef7; --away:#ff8a4c; --gold:#ffb454; --wa:#25d366;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+    padding:18px 14px 30px}
+  .wrap{max-width:520px;margin:0 auto}
+  h1{font-size:22px;letter-spacing:.5px;margin:0 0 3px;text-transform:uppercase}
+  .sub{color:var(--mut);font-size:13px}
+  .clock{color:var(--gold);font-size:13px;margin:6px 0 18px;font-variant-numeric:tabular-nums}
+  .who{width:100%;padding:13px 14px;border-radius:10px;border:1px solid var(--line);
+    background:var(--panel);color:var(--txt);font-size:16px;margin-bottom:8px}
+  .who::placeholder{color:var(--mut)}
+  .who.err{border-color:#f0564f}
+  .note{color:var(--mut);font-size:12px;margin-bottom:18px;line-height:1.5}
+  .sekcja{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);
+    margin:22px 0 10px;padding-left:9px;border-left:3px solid var(--gold)}
+  .m{background:var(--panel);border-radius:12px;padding:12px 13px 13px;margin-bottom:10px;
+    border:1px solid var(--line)}
+  .nm{font-size:15px;font-weight:600;margin-bottom:2px}
+  .dt{color:var(--mut);font-size:12px;margin-bottom:10px}
+  .btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+  button.p{padding:11px 4px;border-radius:9px;border:1px solid var(--track);
+    background:var(--track);color:var(--txt);font-size:16px;font-weight:800;cursor:pointer;
+    line-height:1.15;transition:background .12s,border-color .12s}
+  button.p span{display:block;font-weight:400;font-size:11px;color:var(--mut);margin-top:3px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  button.p i.krs{display:block;font-style:normal;font-size:11px;font-weight:700;
+    color:var(--gold);margin-top:2px;min-height:13px}
+  button.p.on i.krs{color:rgba(15,21,34,.85)}
+  button.p:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  button.p.on{color:#0f1522}
+  button.p.on span{color:rgba(15,21,34,.75)}
+  button.p[data-v="1"].on{background:var(--home);border-color:var(--home)}
+  button.p[data-v="X"].on{background:#9aa3b5;border-color:#9aa3b5}
+  button.p[data-v="2"].on{background:var(--away);border-color:var(--away)}
+  .exact{display:flex;align-items:center;gap:7px;margin-top:10px;color:var(--mut);font-size:12px}
+  .exact input{width:46px;padding:8px;text-align:center;border-radius:8px;
+    border:1px solid var(--line);background:var(--bg);color:var(--txt);font-size:15px}
+  .exact input:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+  .stx{margin-left:10px}
+  .exact input.st{width:78px;border-color:#3a4763}
+  .pula{color:var(--gold);font-size:13px;margin:-8px 0 16px;font-variant-numeric:tabular-nums}
+.rul{display:flex;align-items:center;gap:7px;margin-top:8px;color:var(--mut);font-size:12px;flex-wrap:wrap}
+.rul input.rst{width:78px;padding:8px;text-align:center;border-radius:8px;
+  border:1px solid #3a4763;background:var(--bg);color:var(--txt);font-size:15px}
+.rul input.rst:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+.rul input.rst:disabled{opacity:.45}
+.rkurs{font-variant-numeric:tabular-nums;min-width:150px}
+.rkurs.jest{color:var(--gold)}
+.limit-info{color:var(--gold);font-size:12.5px;margin-top:8px;line-height:1.4}
+  .bar{position:sticky;bottom:0;padding:14px 0 6px;background:linear-gradient(transparent,var(--bg) 25%)}
+  .go{width:100%;padding:16px;border-radius:11px;border:0;background:var(--wa);
+    color:#08210f;font-size:16px;font-weight:800;cursor:pointer;letter-spacing:.3px}
+  .go:disabled{background:var(--track);color:var(--mut);cursor:default}
+  .alt{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:1px solid var(--line);
+    background:transparent;color:var(--mut);font-size:14px;cursor:pointer}
+  .hint{text-align:center;color:var(--mut);font-size:12px;margin-top:9px;min-height:16px}
+  .hint.wazne{color:var(--gold);font-size:13.5px;font-weight:700}
+  .out{margin-top:12px;background:var(--panel);border:1px solid var(--line);border-radius:11px;
+    padding:12px;font-family:ui-monospace,Consolas,monospace;font-size:12.5px;
+    white-space:pre-wrap;display:none}
+  .locked{background:#2a1416;border:1px solid #f0564f;color:#ffb9b6;border-radius:11px;
+    padding:14px;margin-bottom:16px;font-size:14px;line-height:1.5;display:none}
+  /* strona bez meczow do typowania: zostaje sam komunikat */
+  body.pusto .who,body.pusto .note,body.pusto #list,
+  body.pusto .bar,body.pusto .reset{display:none}
+  .reset{background:none;border:0;color:var(--mut);font-size:12px;text-decoration:underline;
+    cursor:pointer;padding:0;margin-top:14px}
+  .prawne{margin-top:26px;padding:14px 2px 6px;border-top:1px solid #1c2740;
+    color:var(--mut);font-size:11px;line-height:1.55}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Typer kolejki</h1>
+  <div class="sub" id="sub"></div>
+  <div class="clock" id="clock"></div>
+
+  <div class="locked" id="locked">Typowanie na tę kolejkę zamknięte — kolejna strona pojawi się w poniedziałek.</div>
+
+  <input class="who" id="who" placeholder="Twoje imię" autocomplete="name" maxlength="24">
+  <div class="note">100 000 żetonów dostajesz na całą rundę — nie odnawiają się co tydzień. W jednej kolejce możesz postawić najwyżej ćwiartkę swojego konta, a na jeden mecz połowę tego, co masz na kolejkę — musisz obstawić co najmniej dwa. Ćwiartka liczy się od stanu konta, więc po dobrym tygodniu rośnie, a po słabym maleje — wpisz imię, a strona pokaże Twój limit na tę kolejkę i nie przepuści kuponu ponad niego. Trafisz — dostajesz stawkę razy kurs spod przycisku. Nie trafisz — stawka przepada. Czego nie postawisz, zostaje na następny tydzień. Nowość: wpisz dokładny wynik, a przy meczu pokaże się kurs ruletki — możesz na ten wynik zagrać osobne żetony (maks dziesiąta część limitu kolejki, wliczają się w ćwiartkę). Kursy liczy model i nie ma w nich prowizji.</div>
+  <div class="pula" id="pula"></div>
+
+  <div id="list"></div>
+
+  <div class="bar">
+    <button class="go" id="go" disabled>Wyślij na WhatsApp</button>
+    <button class="alt" id="copy">Skopiuj zamiast wysyłać</button>
+    <div class="hint" id="hint"></div>
+  </div>
+  <div class="out" id="out"></div>
+  <button class="reset" id="reset">Wyczyść typy</button>
+
+  <footer class="prawne">
+    Prywatna zabawa zamkniętej grupy znajomych. Gramy wyłącznie o wirtualne
+    żetony, które nie mają żadnej wartości pieniężnej ani materialnej —
+    nie można ich kupić, sprzedać ani na cokolwiek wymienić. Nie ma
+    wpisowego, wpłat, wypłat ani nagród. To nie są zakłady wzajemne ani
+    gra hazardowa w rozumieniu ustawy z 19.11.2009 o grach hazardowych —
+    strona nie przyjmuje żadnych zakładów i niczego nie wypłaca.
+    Kursy to szacunki hobbystycznego modelu statystycznego, publikowane
+    wyłącznie dla zabawy; nie są ofertą ani zachętą do gry za pieniądze.
+    Strona nie jest powiązana z Ekstraklasą S.A. ani żadnym klubem —
+    nazwy drużyn użyte wyłącznie informacyjnie.
+  </footer>
+</div>
+
+<script>
+// ── SEKCJA GENEROWANA PRZEZ sim/gen_typer_html.py ─────────────────
+// Format MECZE: [gospodarz, gosc, termin_czytelny, match_id, sekcja, kursy]
+// kursy = [1, X, 2] kursy MODELOWE (1/p, bez marzy) albo null, gdy brak prognozy
+// sekcja: "liga" | "puchary"; match_id < 0 = mecz pucharowy (-euro_fixture.euro_id)
+// Nie edytuj recznie - nadpisze to nastepne uruchomienie generatora.
+const KOLEJKA  = "12. kolejka";
+const DEADLINE = "2026-10-23T20:30";
+const WYGEN    = "23.10.2026, 18:24";
+const GRUPA    = "";
+const MECZE = [
+  ["Widzew", "Górnik", "pt 23.10, 20:30", 82498, "liga", [3.04, 3.25, 2.75], {"1:1":6.83,"0:0":9.88,"1:0":10.81,"0:1":10.83,"2:1":12.74,"1:2":13.03,"0:2":14.57,"2:0":17.13,"2:2":19.71,"1:3":29.06,"0:3":32.50,"3:1":34.16,"3:0":45.96,"3:2":50.81,"2:3":51.98}],
+  ["Piast", "Cracovia", "sob 24.10, 12:15", 82495, "liga", [2.21, 3.37, 3.98], {"1:1":7.08,"1:0":9.04,"0:0":10.47,"2:1":10.61,"2:0":11.78,"0:1":14.32,"1:2":16.38,"2:2":19.92,"0:2":22.76,"3:1":22.90,"3:0":25.43,"3:2":41.25,"1:3":44.25,"0:3":61.50,"2:3":63.69,"4:1":65.92}],
+  ["Korona", "GKS Katowice", "sob 24.10, 14:45", 82492, "liga", [2.84, 3.49, 2.77], {"1:1":7.37,"2:1":11.78,"1:2":12.70,"1:0":13.09,"0:0":13.33,"0:1":13.87,"2:2":16.47,"0:2":16.56,"2:0":17.54,"1:3":25.58,"3:1":27.09,"0:3":33.36,"3:2":36.39,"2:3":39.23,"3:0":40.36}],
+  ["Pogoń", "Radomiak", "sob 24.10, 17:30", 82496, "liga", [1.60, 4.50, 6.53], {"2:1":9.65,"1:1":9.72,"2:0":10.46,"1:0":12.06,"3:1":13.84,"3:0":15.00,"2:2":18.60,"0:0":20.05,"1:2":23.05,"3:2":25.54,"4:1":26.46,"4:0":28.68,"0:1":31.79,"0:2":48.22,"4:2":48.83,"2:3":60.98,"5:1":63.21,"1:3":63.78}],
+  ["Wisła Kraków", "Raków", "sob 24.10, 20:15", 82499, "liga", [2.66, 3.54, 2.92], {"1:1":7.51,"2:1":11.33,"1:2":13.08,"1:0":13.19,"0:0":14.16,"0:1":15.09,"2:2":16.01,"2:0":16.70,"0:2":18.07,"3:1":24.59,"1:3":26.61,"3:2":33.36,"3:0":36.26,"0:3":36.76,"2:3":38.51}],
+  ["Śląsk", "Wieczysta", "nd 25.10, 12:15", 82497, "liga", [2.15, 4.15, 3.41], {"1:1":10.08,"2:1":10.95,"2:2":13.61,"1:2":15.42,"3:1":17.14,"2:0":18.37,"3:2":20.44,"1:0":20.52,"1:3":27.57,"0:0":27.61,"3:0":28.76,"2:3":28.78,"0:2":29.54,"0:1":29.59,"4:1":35.79,"3:3":38.11,"4:2":42.66,"0:3":52.83,"4:0":60.02,"1:4":65.75}],
+  ["Jagiellonia", "Wisła Płock", "nd 25.10, 14:45", 82491, "liga", [1.75, 3.91, 5.76], {"1:1":8.20,"1:0":9.30,"2:0":9.68,"2:1":9.70,"0:0":13.58,"3:0":16.53,"3:1":16.56,"2:2":20.28,"1:2":21.11,"0:1":21.76,"3:2":33.18,"0:2":37.09,"4:0":37.62,"4:1":37.69,"1:3":63.41}],
+  ["Legia", "Lech", "nd 25.10, 17:30", 82493, "liga", [2.72, 3.59, 2.83], {"1:1":7.66,"2:1":11.46,"1:2":12.85,"1:0":14.01,"0:0":14.97,"0:1":15.50,"2:2":15.62,"2:0":17.52,"0:2":17.88,"3:1":24.70,"1:3":25.21,"3:2":32.32,"0:3":35.10,"2:3":36.23,"3:0":37.75,"1:4":66.01,"3:3":66.05}]
+];
+const LIMITY = {"189d6036":[20414,10207,2041],"3103b17":[32972,16486,3297],"663d60b4":[30612,15306,3061],"6eaa744b":[25156,12578,2515],"9d4a46c1":[21720,10860,2172],"cef85153":[20071,10035,2007],"e9f87bd4":[23226,11613,2322]};
+const LIMIT_NOWY = [25000, 12500, 2500];
+// ──────────────────────────────────────────────────────────────────
+
+// LIMITY GRACZA (23.10.2026, po K12: strona pokazywala wszystkim 25 000,
+// a limit gracza pod kreska byl nizszy - nadwyzke przycinal dopiero
+// import; graczom nad kreska strona z kolei zanizala limit).
+// Teraz generator wpisuje do LIMITY prawdziwe limity kazdego aktywnego konta prosto z bazy: [limit_gracza, limit_meczu, limit_wyniku].
+// Klucz = FNV-1a z klucz_nicka() - ta sama normalizacja co import_typy.py
+// (bez spacji, wielkosci liter i ogonkow). Hash to TYLKO zaciemnienie
+// (imiona nie leza na stronie otwartym tekstem), nie ochrona.
+// Nick spoza LIMITY = nowe konto = LIMIT_NOWY (limit_gracza dla pustego konta).
+//   PULA        - limit NA KOLEJKE = 1/4 konta (jaga.limit_gracza)
+//   NA_MECZ     - limit NA JEDEN MECZ = 1/2 limitu kolejki (limit_meczu, migr. 020)
+//   RULETKA_MAX - limit RULETKI = 1/10 limitu kolejki (limit_wyniku, migr. 018);
+//                 stawki ruletki licza sie tez do cwiartki (obie nogi).
+// Zmiana imienia NIE przycina stawek po cichu (literowka w trakcie pisania
+// zjadalaby kupon) - nadwyzka blokuje wysylke z jawnym komunikatem.
+let PULA = LIMIT_NOWY[0], NA_MECZ = LIMIT_NOWY[1], RULETKA_MAX = LIMIT_NOWY[2];
+function kluczNicka(s){
+  return (s || "").trim().toLowerCase().normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "").replace(/\u0142/g, "l").replace(/[^a-z0-9]/g, "");
+}
+function fnv(s){
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(16);
+}
+let ZNANE_KONTO = false;
+function ustawLimity(imie){
+  const k = kluczNicka(imie);
+  const l = k ? LIMITY[fnv(k)] : null;
+  ZNANE_KONTO = !!l;
+  [PULA, NA_MECZ, RULETKA_MAX] = l || LIMIT_NOWY;
+}
+function nadLimitem(){
+  const znaki = stan.st.reduce((s, x, i) => stan.typ[i] !== null ? s + (+x || 0) : s, 0);
+  const rul = stan.rt.reduce((s, x, i) => stan.typ[i] !== null ? s + (+x || 0) : s, 0);
+  if (stan.st.some((x, i) => stan.typ[i] !== null && (+x || 0) > NA_MECZ))
+    return "Na jeden mecz masz maksymalnie " + fmt(NA_MECZ) + " żetonów - zmniejsz stawkę.";
+  if (rul > RULETKA_MAX)
+    return "Na ruletkę masz " + fmt(RULETKA_MAX) + " żetonów, a rozdane " + fmt(rul) + " - zmniejsz stawki ruletki.";
+  if (znaki + rul > PULA)
+    return "Twój limit na tę kolejkę to " + fmt(PULA) + " żetonów, a rozdane " + fmt(znaki + rul) + " - zmniejsz stawki.";
+  return "";
+}
+const fmt = n => n.toLocaleString("pl-PL");
+const KEY = "typer_r3_" + KOLEJKA.replace(/\W/g, "");   // r3: ruletka; starszy zapis ignorowany
+const N = MECZE.length;
+const JEST_RULETKA = MECZE.some(m => m[6]);
+const stan = {imie:"", typ:new Array(N).fill(null), hg:new Array(N).fill(""), ag:new Array(N).fill(""), st:new Array(N).fill(0), rt:new Array(N).fill(0)};
+const $ = id => document.getElementById(id);
+$("sub").textContent = "Ekstraklasa — " + KOLEJKA + " · dane z " + WYGEN;
+
+function zapisz(){ try{ localStorage.setItem(KEY, JSON.stringify(stan)); }catch(e){} }
+(function wczytaj(){
+  try{
+    const s = JSON.parse(localStorage.getItem(KEY) || "null");
+    if(!s || !Array.isArray(s.typ) || s.typ.length !== N) return;
+    stan.imie = s.imie || ""; stan.typ = s.typ;
+    ustawLimity(stan.imie);   // przyciecie ponizej liczy sie od limitu TEGO gracza
+    stan.hg = s.hg || stan.hg; stan.ag = s.ag || stan.ag;
+    stan.st = (Array.isArray(s.st) && s.st.length === N) ? s.st : stan.st;
+    // Defensywne przyciecie odtworzonych stawek do AKTUALNYCH limitow -
+    // zapis z poprzedniej wersji mechaniki nie moze zjadac dzisiejszej puli.
+    let pool = 0;
+    stan.st = stan.st.map(v => {
+      let x = Math.max(0, Math.floor(+v || 0));
+      if (x > NA_MECZ) x = NA_MECZ;
+      if (pool + x > PULA) x = Math.max(0, PULA - pool);
+      pool += x;
+      return x;
+    });
+    // Ruletka z zapisu: suma przycieta do wlasnej puli; kursy sprawdzi
+    // budowa kafelka (wynik spoza dzisiejszej oferty = stawka zerowana).
+    let rpool = 0;
+    stan.rt = (Array.isArray(s.rt) && s.rt.length === N ? s.rt : stan.rt)
+      .map(v => {
+        let x = Math.max(0, Math.floor(+v || 0));
+        if (rpool + x > RULETKA_MAX) x = Math.max(0, RULETKA_MAX - rpool);
+        rpool += x;
+        return x;
+      });
+  }catch(e){}
+})();
+
+const koniec = new Date(DEADLINE);
+let zamkniete = false;
+function zegar(){
+  const ms = koniec - new Date();
+  zamkniete = ms <= 0;
+  if(zamkniete){
+    $("clock").textContent = "";
+    $("locked").style.display = "block";
+    document.querySelectorAll("button.p, .exact input, .rul input, .who").forEach(el => el.disabled = true);
+  }else{
+    const h = Math.floor(ms/3600000), m = Math.floor(ms%3600000/60000);
+    $("clock").textContent = "Do zamknięcia typów: " + (h >= 24
+      ? Math.floor(h/24) + " dni " + (h%24) + " godz."
+      : h + " godz. " + m + " min.");
+  }
+  sprawdz();
+}
+
+// Pusta lista = kolejka wytypowana/rozpoczeta: zostaje sam komunikat,
+// bez formularza i pustego miejsca po meczach.
+if(N === 0){
+  document.body.classList.add("pusto");
+  $("locked").style.display = "block";
+}
+
+const list = $("list");
+let ostatniaSekcja = null;
+MECZE.forEach((m, i) => {
+  if(m[4] !== ostatniaSekcja){
+    ostatniaSekcja = m[4];
+    const s = document.createElement("div");
+    s.className = "sekcja";
+    s.textContent = m[4] === "puchary" ? "Puchary" : "Ekstraklasa — " + KOLEJKA;
+    list.appendChild(s);
+  }
+  const box = document.createElement("div");
+  box.className = "m";
+  // Szkielet bez danych, a nazwy i terminy wstawiane przez textContent.
+  // Nazwy pochodza ze scrapu (rywal pucharowy to wolny tekst) - przez
+  // innerHTML mozna by nimi wstrzyknac HTML, przez textContent nie.
+  box.innerHTML =
+    '<div class="nm"></div>' +
+    '<div class="dt"></div>' +
+    '<div class="btns">' +
+      '<button class="p" data-v="1" aria-pressed="false">1<span></span><i class="krs"></i></button>' +
+      '<button class="p" data-v="X" aria-pressed="false">X<span>remis</span><i class="krs"></i></button>' +
+      '<button class="p" data-v="2" aria-pressed="false">2<span></span><i class="krs"></i></button>' +
+    '</div>' +
+    '<div class="exact">wynik (opcjonalnie): ' +
+      '<input type="number" min="0" max="15" inputmode="numeric" aria-label="gole gospodarzy">' +
+      ':<input type="number" min="0" max="15" inputmode="numeric" aria-label="gole gości">' +
+      '<span class="stx">żetony (maks ' + fmt(NA_MECZ) + '):</span>' +
+      '<input type="number" min="0" max="' + NA_MECZ + '" step="100" inputmode="numeric" class="st" aria-label="stawka w żetonach" placeholder="0">' +
+    '</div>' +
+    '<div class="rul" style="display:none">' +
+      '<span class="rkurs"></span>' +
+      '<span class="stx">RULETKA — osobny zakład na ten wynik:</span>' +
+      '<input type="number" min="0" max="' + RULETKA_MAX + '" step="100" inputmode="numeric" class="rst" aria-label="ruletka: osobna stawka na dokładny wynik" placeholder="0" disabled>' +
+    '</div>' +
+    '<div class="limit-info" style="display:none"></div>';
+  box.querySelector(".nm").textContent = m[0] + " – " + m[1];
+  box.querySelector(".dt").textContent = m[2];
+  const opisy = box.querySelectorAll("button.p span");   // 1 / X / 2
+  opisy[0].textContent = m[0];
+  opisy[2].textContent = m[1];
+  // kursy modelowe: szosty element MECZE = [k1, kx, k2] albo brak/null
+  const K = Array.isArray(m[5]) ? m[5] : null;
+  box.querySelectorAll("button.p i.krs").forEach((el, ix) => {
+    el.textContent = (K && K[ix]) ? Number(K[ix]).toFixed(2) : "";
+  });
+  const btns = box.querySelectorAll("button.p");
+  btns.forEach(b => b.addEventListener("click", () => {
+    const bylo = stan.typ[i] === b.dataset.v;
+    btns.forEach(x => { x.classList.remove("on"); x.setAttribute("aria-pressed","false"); });
+    if(bylo){
+      stan.typ[i] = null;
+      ih.value = ""; ia.value = ""; stan.hg[i] = ""; stan.ag[i] = "";
+      ist.value = ""; stan.st[i] = 0; ist.disabled = true;
+      rst.value = ""; stan.rt[i] = 0;
+      aktualizujRuletke();
+      zapisz(); pula(); sprawdz(); return;
+    }
+    b.classList.add("on"); b.setAttribute("aria-pressed","true");
+    stan.typ[i] = b.dataset.v;
+    ist.disabled = false;
+    if(ih.value !== "" && ia.value !== ""){
+      const h = +ih.value, a = +ia.value;
+      const z = h > a ? "1" : (h === a ? "X" : "2");
+      if(z !== b.dataset.v){ ih.value = ""; ia.value = ""; stan.hg[i] = ""; stan.ag[i] = ""; aktualizujRuletke(); }
+    }
+    zapisz(); sprawdz();
+  }));
+  const KEY_st = 0; // marker wersji z zetonami
+  const [ih, ia] = box.querySelectorAll(".exact input:not(.st)");
+  const ist = box.querySelector("input.st");
+  // RULETKA: gracz wpisuje wynik jak dotad, strona pokazuje kurs obok.
+  // Slownik ofert przyszedl z generatora (v_kurs_wyniku); wynik spoza
+  // slownika nie ma kursu i stawka na niego jest niemozliwa - dokladnie
+  // tak, jak odrzucilby ja import.
+  const RUL = (m[6] && typeof m[6] === "object") ? m[6] : null;
+  const rbox = box.querySelector(".rul");
+  const rst = box.querySelector("input.rst");
+  const rk = box.querySelector(".rkurs");
+  if(RUL) rbox.style.display = "";
+  function kursRuletki(){
+    if(!RUL || ih.value === "" || ia.value === "") return null;
+    return RUL[(+ih.value) + ":" + (+ia.value)] || null;
+  }
+  function aktualizujRuletke(){
+    if(!RUL) return;
+    const k = kursRuletki();
+    if(ih.value === "" || ia.value === ""){
+      rk.textContent = "wpisz wynik — zobaczysz kurs";
+      rk.classList.remove("jest");
+      rst.disabled = true;
+      if(+stan.rt[i]){ stan.rt[i] = 0; rst.value = ""; }
+    }else if(k){
+      const w = +stan.rt[i] || 0;
+      rk.textContent = "kurs " + k.toFixed(2)
+        + (w > 0 ? " → trafisz: " + fmt(Math.round(w * k)) + " żet." : "");
+      rk.classList.add("jest");
+      rst.disabled = zamkniete;
+    }else{
+      rk.textContent = (+ih.value) + ":" + (+ia.value) + " — poza ofertą, bez kursu";
+      rk.classList.remove("jest");
+      rst.disabled = true;
+      if(+stan.rt[i]){ stan.rt[i] = 0; rst.value = ""; }
+    }
+    // licznik na gorze MUSI nadazac za zerowaniem stawki przy zmianie
+    // wyniku - bez tego pokazywal "rozdane 1200" przy stanie zero
+    // (bug zlapany testem puppeteer 10.08)
+    pula();
+  }
+  rst.addEventListener("input", () => {
+    let v = rst.value === "" ? 0 : Math.max(0, Math.floor(+rst.value));
+    const innychR = stan.rt.reduce((s, x, j) => j === i ? s : s + (+x || 0), 0);
+    const znaki = stan.st.reduce((s, x) => s + (+x || 0), 0);
+    let powod = "";
+    if (innychR + v > RULETKA_MAX) {
+      v = Math.max(0, RULETKA_MAX - innychR); rst.value = v > 0 ? v : "";
+      powod = "Na ruletkę masz " + fmt(RULETKA_MAX) + " żetonów na całą kolejkę — zostało " + fmt(RULETKA_MAX - innychR) + ".";
+    }
+    if (znaki + innychR + v > PULA) {
+      v = Math.max(0, PULA - znaki - innychR); rst.value = v > 0 ? v : "";
+      powod = "Znaki i ruletka razem mieszczą się w " + fmt(PULA) + " — zostało " + fmt(Math.max(0, PULA - znaki - innychR)) + ".";
+    }
+    const info = box.querySelector(".limit-info");
+    if (info) { info.textContent = powod; info.style.display = powod ? "block" : "none"; }
+    stan.rt[i] = rst.value === "" ? 0 : v;
+    aktualizujRuletke();
+    zapisz(); pula();
+  });
+  ist.addEventListener("input", () => {
+    let v = ist.value === "" ? 0 : Math.max(0, Math.floor(+ist.value));
+    // ruletka liczy sie do tej samej cwiartki (limit_gracza sumuje obie nogi)
+    const innych = stan.st.reduce((s, x, j) => j === i ? s : s + (+x || 0), 0)
+                 + stan.rt.reduce((s, x) => s + (+x || 0), 0);
+    // dwa sufity: limit na pojedynczy mecz i laczny limit kolejki.
+    // Przyciecie MUSI byc widoczne - cicha zmiana wpisanej liczby wyglada
+    // jak blad strony i gracz nie wie, czemu jego stawka zmalala.
+    let powod = "";
+    if (v > NA_MECZ) { v = NA_MECZ; ist.value = v; powod = "Na jeden mecz maksymalnie " + fmt(NA_MECZ) + " żetonów."; }
+    if (innych + v > PULA) { v = PULA - innych; ist.value = v > 0 ? v : ""; powod = "Na całą kolejkę masz " + fmt(PULA) + " żetonów — zostało " + fmt(PULA - innych) + "."; }
+    const info = box.querySelector(".limit-info");
+    if (info) { info.textContent = powod; info.style.display = powod ? "block" : "none"; }
+    stan.st[i] = ist.value === "" ? 0 : v;
+    zapisz(); pula();
+  });
+  function synchronizujZnak(){
+    if(ih.value === "" || ia.value === "") return;
+    const h = +ih.value, a = +ia.value;
+    const z = h > a ? "1" : (h === a ? "X" : "2");
+    btns.forEach(x => { x.classList.remove("on"); x.setAttribute("aria-pressed","false"); });
+    const b = box.querySelector('button.p[data-v="' + z + '"]');
+    b.classList.add("on"); b.setAttribute("aria-pressed","true");
+    stan.typ[i] = z;
+    ist.disabled = false;
+  }
+  ih.addEventListener("input", () => { stan.hg[i] = ih.value; synchronizujZnak(); aktualizujRuletke(); zapisz(); sprawdz(); });
+  ia.addEventListener("input", () => { stan.ag[i] = ia.value; synchronizujZnak(); aktualizujRuletke(); zapisz(); sprawdz(); });
+  if(stan.typ[i]){
+    const b = box.querySelector('button.p[data-v="' + stan.typ[i] + '"]');
+    if(b){ b.classList.add("on"); b.setAttribute("aria-pressed","true"); }
+  }
+  ih.value = stan.hg[i]; ia.value = stan.ag[i];
+  ist.value = stan.st[i] > 0 ? stan.st[i] : "";
+  ist.disabled = (stan.typ[i] === null);
+  rst.value = stan.rt[i] > 0 ? stan.rt[i] : "";
+  aktualizujRuletke();   // zeruje tez stawke z zapisu, gdy wynik wypadl z oferty
+  list.appendChild(box);
+});
+
+// Po zmianie imienia: nowe sufity na kafelkach i w liczniku. Stawek nie
+// ruszamy - nadwyzke pokazuje sprawdz() i blokuje wysylke.
+function odswiezLimity(){
+  document.querySelectorAll("#list .m").forEach(box => {
+    const stx = box.querySelector(".exact .stx");
+    if (stx) stx.textContent = "żetony (maks " + fmt(NA_MECZ) + "):";
+    const ist = box.querySelector("input.st");
+    if (ist) ist.max = NA_MECZ;
+    const rst = box.querySelector("input.rst");
+    if (rst) rst.max = RULETKA_MAX;
+  });
+  pula();
+}
+$("who").value = stan.imie;
+ustawLimity(stan.imie);
+odswiezLimity();
+$("who").addEventListener("input", e => {
+  stan.imie = e.target.value; e.target.classList.remove("err");
+  ustawLimity(stan.imie); odswiezLimity();
+  zapisz(); sprawdz();
+});
+
+function sprawdz(){
+  const ile = stan.typ.filter(v => v !== null).length;
+  // Nadwyzka ponad limit TEGO gracza blokuje wysylke - kupon ma wyjsc
+  // ze strony taki, jaki zostanie rozliczony (import nie ma czego przycinac).
+  const nad = nadLimitem();
+  const ok = ile >= 1 && stan.imie.trim().length > 0 && !zamkniete && !nad;
+  $("go").disabled = !ok; $("copy").disabled = !ok;
+  if (nad && !zamkniete) {
+    $("hint").classList.add("wazne");
+    $("hint").textContent = nad;
+    return;
+  }
+  // Typy sa, imienia nie ma: pole imienia jest na gorze, a gracz wlasnie
+  // skonczyl na dole strony - blady hint nie wystarcza (wpadka z testu
+  // na zywo 10.08). Czerwona ramka na polu + wyrazna wskazowka ze strzalka.
+  const brakImienia = ile >= 1 && stan.imie.trim().length === 0 && !zamkniete;
+  $("who").classList.toggle("err", brakImienia);
+  $("hint").classList.toggle("wazne", brakImienia);
+  if(zamkniete){ $("hint").textContent = ""; return; }
+  $("hint").textContent = ile === 0
+    ? "Wytypuj przynajmniej jeden mecz — nie musisz wszystkich"
+    : (stan.imie.trim() ? "Wytypowano " + ile + " z " + N + " — wyślij i wybierz naszą grupę"
+                        : "Wpisz imię w polu na górze strony ↑");
+}
+
+function stempel(){
+  const d = new Date(), p = n => String(n).padStart(2,"0");
+  return p(d.getDate()) + "." + p(d.getMonth()+1) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+}
+function tekst(){
+  const imie = stan.imie.trim();
+  let t = imie + " — typy na " + KOLEJKA + " (" + stempel() + ")\n";
+  MECZE.forEach((m, i) => {
+    if(stan.typ[i] === null) return;
+    const w = (stan.hg[i] !== "" && stan.ag[i] !== "") ? "  " + stan.hg[i] + ":" + stan.ag[i] : "";
+    const zt = (+stan.st[i] || 0) > 0 ? "  [" + stan.st[i] + " żet.]" : "";
+    const rl = (+stan.rt[i] || 0) > 0 ? "  [ruletka " + stan.rt[i] + " żet.]" : "";
+    t += m[0] + " – " + m[1] + "  " + stan.typ[i] + w + zt + rl + "\n";
+  });
+  const ids = MECZE.map(m => m[3]).join(",");
+  const znaki = stan.typ.map(v => v || "-").join("");
+  const wyniki = MECZE.map((m, i) =>
+    (stan.typ[i] !== null && stan.hg[i] !== "" && stan.ag[i] !== "") ? stan.hg[i] + "-" + stan.ag[i] : "").join(",");
+  const stawki = stan.st.map((v, i) => stan.typ[i] !== null ? (+v || 0) : 0).join(",");
+  const rsuma = stan.rt.reduce((s, x) => s + (+x || 0), 0);
+  const rul = rsuma > 0
+    ? "|ruletka:" + stan.rt.map((v, i) => stan.typ[i] !== null ? (+v || 0) : 0).join(",")
+    : "";
+  t += "\n#" + KOLEJKA.replace(/\D/g,"") + "|" + imie + "|" + znaki + "|" + wyniki
+     + "|stawki:" + stawki + rul + "|" + stempel() + "|" + ids;
+  return t;
+}
+
+// Sprawa Paula (K4): dwa razy trafil dokladny wynik wpisany bez zetonow
+// na ruletke - wynik bez stawki nie placi, o czym dowiedzial sie po
+// gwizdku. Przy wysylce pytamy wprost, ZANIM kupon pojdzie na grupe.
+// Pytanie jedno na kupon (nie na mecz), zeby nie zamęczyć klikajacego.
+function wynikiBezZetonow(){
+  const lista = [];
+  document.querySelectorAll("#list .m").forEach((box, i) => {
+    const ex = box.querySelectorAll(".exact input:not(.st)");
+    const maWynik = ex[0].value !== "" && ex[1].value !== "";
+    const rst = box.querySelector("input.rst");
+    if (maWynik && (!rst || !(+rst.value > 0))) {
+      lista.push(box.querySelector(".nm").textContent);
+    }
+  });
+  return lista;
+}
+
+// Awaryjna sciezka wysylki: pokaz tekst kuponu i wrzuc go do schowka.
+// Uzywana i przez przycisk "Skopiuj", i przez "Wyslij", gdy przegladarka
+// mimo wszystko zablokuje okienko - zeby klikajacy nigdy nie zostal
+// z martwym przyciskiem i przekonaniem, ze kupon poszedl.
+async function pokazISkopiuj(prefiks){
+  const t = tekst();
+  $("out").style.display = "block"; $("out").textContent = t;
+  try{
+    await navigator.clipboard.writeText(t);
+    $("hint").textContent = prefiks + "Skopiowane — wklej na grupę";
+  }catch(e){
+    const r = document.createRange(); r.selectNodeContents($("out"));
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    $("hint").textContent = prefiks + "Zaznaczone — skopiuj i wklej na grupę";
+  }
+}
+
+$("go").addEventListener("click", () => {
+  const bez = wynikiBezZetonow();
+  // BLOKADA POPUPU (zgloszenie 17.08, Edge): confirm() KONCZY gest
+  // uzytkownika, wiec window.open wolany PO nim nie jest juz "klikiem"
+  // i przegladarka go blokuje - przycisk przestawal cokolwiek robic.
+  // Okno otwieramy wiec od razu, jeszcze w gescie, a adres podstawiamy
+  // dopiero po odpowiedzi na pytanie. Anulowanie zamyka pusta karte.
+  const okno = bez.length ? window.open("", "_blank") : null;
+  if (bez.length && !confirm(
+      "Masz wpisany wynik BEZ żetonów na ruletkę przy: " + bez.join(", ") +
+      ".\n\nWynik bez żetonów NIE wygrywa nic — liczy się tylko do " +
+      "rozstrzygnięcia remisu kont.\n\nWysłać mimo to?")) {
+    if (okno) okno.close();
+    $("hint").textContent = "Kupon nie wysłany — dołóż żetony na wynik albo wyślij ponownie.";
+    return;
+  }
+  const url = (GRUPA ? GRUPA + "?text=" : "https://wa.me/?text=") + encodeURIComponent(tekst());
+  const cel = okno || window.open(url, "_blank");
+  if (!cel) { pokazISkopiuj("Przeglądarka zablokowała okienko. "); return; }
+  if (okno) okno.location.href = url;
+  $("hint").textContent = "WhatsApp otwarty — wybierz naszą grupę z listy i wyślij";
+});
+$("copy").addEventListener("click", async () => {
+  const bez = wynikiBezZetonow();
+  if (bez.length && !confirm(
+      "Masz wpisany wynik BEZ żetonów na ruletkę przy: " + bez.join(", ") +
+      ".\n\nWynik bez żetonów NIE wygrywa nic — liczy się tylko do " +
+      "rozstrzygnięcia remisu kont.\n\nSkopiować mimo to?")) {
+    $("hint").textContent = "Nie skopiowane — dołóż żetony na wynik albo skopiuj ponownie.";
+    return;
+  }
+  await pokazISkopiuj("");
+});
+$("reset").addEventListener("click", () => {
+  if(!confirm("Wyczyścić wszystkie typy?")) return;
+  try{ localStorage.removeItem(KEY); }catch(e){}
+  location.reload();
+});
+
+function pula(){
+  const suma = stan.st.reduce((s, x) => s + (+x || 0), 0);
+  const rul  = stan.rt.reduce((s, x) => s + (+x || 0), 0);
+  const kto = !stan.imie.trim() ? "Wpisz imię, a pokażę Twój limit. Na start rundy: "
+            : (ZNANE_KONTO ? "Twój limit na tę kolejkę: " : "Nowe konto - limit na tę kolejkę: ");
+  $("pula").textContent = kto + "rozdane " + fmt(suma + rul) + " / " + fmt(PULA)
+    + " · zostało " + fmt(Math.max(0, PULA - suma - rul)) + " · maks " + fmt(NA_MECZ) + " na jeden mecz"
+    + (JEST_RULETKA ? " · ruletka: " + fmt(rul) + " / " + fmt(RULETKA_MAX) : "");
+  sprawdz();   // zmiana stawek musi od razu zdjac (albo nalozyc) blokade nadwyzki
+}
+pula();
+zegar();
+setInterval(zegar, 30000);
+</script>
+</body>
+</html>
