@@ -91,7 +91,7 @@
   <div class="locked" id="locked">Typowanie na tę kolejkę zamknięte — kolejna strona pojawi się w poniedziałek.</div>
 
   <input class="who" id="who" placeholder="Twoje imię" autocomplete="name" maxlength="24">
-  <div class="note">100 000 żetonów dostajesz na całą rundę — nie odnawiają się co tydzień. W jednej kolejce możesz postawić najwyżej ćwiartkę swojego konta, a na jeden mecz połowę tego, co masz na kolejkę — musisz obstawić co najmniej dwa. Ćwiartka liczy się od stanu konta, więc po dobrym tygodniu rośnie, a po słabym maleje: suwaki niżej pokazują 25 000, czyli ćwiartkę konta na starcie rundy, i jeśli jesteś pod kreską, twój rzeczywisty limit jest niższy — nadwyżka zostanie proporcjonalnie przycięta przy rozliczeniu, typy zostają w grze. Dokładny stan konta i limit masz w cotygodniowym raporcie. Trafisz — dostajesz stawkę razy kurs spod przycisku. Nie trafisz — stawka przepada. Czego nie postawisz, zostaje na następny tydzień. Nowość: wpisz dokładny wynik, a przy meczu pokaże się kurs ruletki — możesz na ten wynik zagrać osobne żetony (maks dziesiąta część limitu kolejki, wliczają się w ćwiartkę). Kursy liczy model i nie ma w nich prowizji.</div>
+  <div class="note">100 000 żetonów dostajesz na całą rundę — nie odnawiają się co tydzień. W jednej kolejce możesz postawić najwyżej ćwiartkę swojego konta, a na jeden mecz połowę tego, co masz na kolejkę — musisz obstawić co najmniej dwa. Ćwiartka liczy się od stanu konta, więc po dobrym tygodniu rośnie, a po słabym maleje — wpisz imię, a strona pokaże Twój limit na tę kolejkę i nie przepuści kuponu ponad niego. Trafisz — dostajesz stawkę razy kurs spod przycisku. Nie trafisz — stawka przepada. Czego nie postawisz, zostaje na następny tydzień. Nowość: wpisz dokładny wynik, a przy meczu pokaże się kurs ruletki — możesz na ten wynik zagrać osobne żetony (maks dziesiąta część limitu kolejki, wliczają się w ćwiartkę). Kursy liczy model i nie ma w nich prowizji.</div>
   <div class="pula" id="pula"></div>
 
   <div id="list"></div>
@@ -124,37 +124,67 @@
 // kursy = [1, X, 2] kursy MODELOWE (1/p, bez marzy) albo null, gdy brak prognozy
 // sekcja: "liga" | "puchary"; match_id < 0 = mecz pucharowy (-euro_fixture.euro_id)
 // Nie edytuj recznie - nadpisze to nastepne uruchomienie generatora.
-const KOLEJKA  = "12. kolejka";
-const DEADLINE = "2026-10-23T17:00";
-const WYGEN    = "19.10.2026, 21:09";
+const KOLEJKA  = "13. kolejka";
+const DEADLINE = "2026-10-30T17:00";
+const WYGEN    = "26.10.2026, 11:39";
 const GRUPA    = "";
 const MECZE = [
-  ["Motor", "Zagłębie", "pt 23.10, 18:00", 82494, "liga", [2.34, 3.60, 3.40], {"1:1":7.64,"2:1":10.58,"1:0":12.33,"1:2":14.32,"2:0":14.48,"0:0":14.53,"2:2":16.10,"0:1":16.92,"3:1":21.09,"0:2":21.55,"3:0":28.88,"3:2":30.81,"1:3":31.39,"2:3":41.74,"0:3":47.21,"4:1":56.09}],
-  ["Widzew", "Górnik", "pt 23.10, 20:30", 82498, "liga", [3.04, 3.25, 2.75], {"1:1":6.83,"0:0":9.88,"1:0":10.81,"0:1":10.83,"2:1":12.74,"1:2":13.03,"0:2":14.57,"2:0":17.13,"2:2":19.71,"1:3":29.06,"0:3":32.50,"3:1":34.16,"3:0":45.96,"3:2":50.81,"2:3":51.98}],
-  ["Piast", "Cracovia", "sob 24.10, 12:15", 82495, "liga", [2.21, 3.37, 3.98], {"1:1":7.08,"1:0":9.04,"0:0":10.47,"2:1":10.61,"2:0":11.78,"0:1":14.32,"1:2":16.38,"2:2":19.92,"0:2":22.76,"3:1":22.90,"3:0":25.43,"3:2":41.25,"1:3":44.25,"0:3":61.50,"2:3":63.69,"4:1":65.92}],
-  ["Korona", "GKS Katowice", "sob 24.10, 14:45", 82492, "liga", [2.84, 3.49, 2.77], {"1:1":7.37,"2:1":11.78,"1:2":12.70,"1:0":13.09,"0:0":13.33,"0:1":13.87,"2:2":16.47,"0:2":16.56,"2:0":17.54,"1:3":25.58,"3:1":27.09,"0:3":33.36,"3:2":36.39,"2:3":39.23,"3:0":40.36}],
-  ["Pogoń", "Radomiak", "sob 24.10, 17:30", 82496, "liga", [1.60, 4.50, 6.53], {"2:1":9.65,"1:1":9.72,"2:0":10.46,"1:0":12.06,"3:1":13.84,"3:0":15.00,"2:2":18.60,"0:0":20.05,"1:2":23.05,"3:2":25.54,"4:1":26.46,"4:0":28.68,"0:1":31.79,"0:2":48.22,"4:2":48.83,"2:3":60.98,"5:1":63.21,"1:3":63.78}],
-  ["Wisła Kraków", "Raków", "sob 24.10, 20:15", 82499, "liga", [2.66, 3.54, 2.92], {"1:1":7.51,"2:1":11.33,"1:2":13.08,"1:0":13.19,"0:0":14.16,"0:1":15.09,"2:2":16.01,"2:0":16.70,"0:2":18.07,"3:1":24.59,"1:3":26.61,"3:2":33.36,"3:0":36.26,"0:3":36.76,"2:3":38.51}],
-  ["Śląsk", "Wieczysta", "nd 25.10, 12:15", 82497, "liga", [2.15, 4.15, 3.41], {"1:1":10.08,"2:1":10.95,"2:2":13.61,"1:2":15.42,"3:1":17.14,"2:0":18.37,"3:2":20.44,"1:0":20.52,"1:3":27.57,"0:0":27.61,"3:0":28.76,"2:3":28.78,"0:2":29.54,"0:1":29.59,"4:1":35.79,"3:3":38.11,"4:2":42.66,"0:3":52.83,"4:0":60.02,"1:4":65.75}],
-  ["Jagiellonia", "Wisła Płock", "nd 25.10, 14:45", 82491, "liga", [1.75, 3.91, 5.76], {"1:1":8.20,"1:0":9.30,"2:0":9.68,"2:1":9.70,"0:0":13.58,"3:0":16.53,"3:1":16.56,"2:2":20.28,"1:2":21.11,"0:1":21.76,"3:2":33.18,"0:2":37.09,"4:0":37.62,"4:1":37.69,"1:3":63.41}],
-  ["Legia", "Lech", "nd 25.10, 17:30", 82493, "liga", [2.72, 3.59, 2.83], {"1:1":7.66,"2:1":11.46,"1:2":12.85,"1:0":14.01,"0:0":14.97,"0:1":15.50,"2:2":15.62,"2:0":17.52,"0:2":17.88,"3:1":24.70,"1:3":25.21,"3:2":32.32,"0:3":35.10,"2:3":36.23,"3:0":37.75,"1:4":66.01,"3:3":66.05}]
+  ["Cracovia", "Motor", "pt 30.10, 18:00", 86768, "liga", [2.03, 3.90, 3.99], {"1:1":8.57,"2:1":10.02,"1:0":13.72,"2:0":13.84,"2:2":15.20,"1:2":16.18,"3:1":17.05,"0:0":18.87,"0:1":22.94,"3:0":23.56,"3:2":24.69,"0:2":28.52,"1:3":35.14,"4:1":38.68,"2:3":39.86,"4:0":53.45,"4:2":56.02,"3:3":56.18,"0:3":61.96}],
+  ["Górnik", "Legia", "pt 30.10, 20:30", 86770, "liga", [2.41, 3.39, 3.45], {"1:1":7.10,"1:0":10.30,"2:1":10.85,"0:0":11.53,"2:0":13.65,"0:1":14.11,"1:2":14.73,"2:2":17.97,"0:2":20.00,"3:1":23.99,"3:0":30.17,"1:3":35.14,"3:2":38.14,"0:3":47.71,"2:3":51.76}],
+  ["Wisła Płock", "Piast", "sob 31.10, 12:15", 86775, "liga", [3.02, 3.03, 2.95], {"1:1":6.56,"0:0":7.75,"1:0":8.94,"0:1":9.44,"2:1":13.49,"1:2":14.46,"0:2":14.68,"2:0":15.94,"2:2":23.61,"1:3":36.71,"0:3":37.27,"3:1":39.86,"3:0":47.08}],
+  ["Wieczysta", "Jagiellonia", "sob 31.10, 14:45", 86774, "liga", [3.28, 4.22, 2.18], {"1:1":10.51,"1:2":12.54,"2:2":13.51,"2:1":14.01,"1:3":17.46,"0:2":19.55,"2:3":22.39,"0:1":24.07,"3:2":25.01,"3:1":26.95,"0:3":27.22,"1:0":28.43,"0:0":30.06,"2:0":30.18,"1:4":32.39,"3:3":36.18,"2:4":41.56,"0:4":50.51,"3:0":58.11,"4:2":64.14}],
+  ["Lech", "Wisła Kraków", "sob 31.10, 17:30", 86771, "liga", [1.63, 4.47, 6.17], {"2:1":9.60,"1:1":9.76,"2:0":11.04,"1:0":12.65,"3:1":13.85,"3:0":15.92,"2:2":17.63,"0:0":21.17,"1:2":22.28,"3:2":24.08,"4:1":26.62,"4:0":30.60,"0:1":31.97,"4:2":46.30,"0:2":46.36,"2:3":55.90,"1:3":58.14,"5:1":63.98,"3:3":66.31}],
+  ["GKS Katowice", "Widzew", "sob 31.10, 20:15", 86769, "liga", [1.89, 3.78, 4.81], {"1:1":7.97,"2:1":9.73,"1:0":10.24,"2:0":11.04,"0:0":14.28,"3:1":17.31,"2:2":18.00,"1:2":18.41,"3:0":19.63,"0:1":20.35,"3:2":30.53,"0:2":31.05,"4:1":41.07,"4:0":46.58,"1:3":48.69,"2:3":57.74}],
+  ["Radomiak", "Śląsk", "pn 2.11, 18:00", 86772, "liga", [2.34, 3.72, 3.30], {"1:1":8.10,"2:1":10.60,"1:0":14.11,"1:2":14.21,"2:2":14.92,"2:0":15.72,"0:0":17.29,"0:1":19.08,"3:1":20.11,"0:2":22.47,"3:2":27.11,"1:3":28.74,"3:0":29.82,"2:3":36.34,"0:3":45.45,"4:1":50.86,"3:3":57.24}],
+  ["Zagłębie", "Korona", "pn 2.11, 18:00", 86776, "liga", [2.36, 3.21, 3.77], {"1:1":6.80,"1:0":8.42,"0:0":9.06,"2:1":11.22,"2:0":12.22,"0:1":12.43,"1:2":16.32,"0:2":20.52,"2:2":21.44,"3:1":26.77,"3:0":29.17,"1:3":44.92,"3:2":49.14,"0:3":56.50}],
+  ["Raków", "Pogoń", "pn 2.11, 20:30", 86773, "liga", [2.28, 3.62, 3.52], {"1:1":7.69,"2:1":10.42,"1:0":12.15,"2:0":14.17,"1:2":14.73,"0:0":14.81,"2:2":15.99,"0:1":17.44,"3:1":20.46,"0:2":22.51,"3:0":27.83,"3:2":30.08,"1:3":32.49,"2:3":42.54,"0:3":49.63,"4:1":53.56}]
 ];
+const LIMITY = {"189d6036":[18508,9254,1850],"3103b17":[32330,16165,3233],"663d60b4":[33257,16628,3325],"6eaa744b":[27416,13708,2741],"9d4a46c1":[23338,11669,2333],"cef85153":[20071,10035,2007],"e9f87bd4":[21526,10763,2152]};
+const LIMIT_NOWY = [25000, 12500, 2500];
 // ──────────────────────────────────────────────────────────────────
 
-const PULA = 25000;   // limit NA KOLEJKE = 1/4 konta (jaga.limit_gracza).
-const NA_MECZ = 12500; // limit NA JEDEN MECZ = 1/2 limitu kolejki
-                      // (jaga.limit_meczu, migracja 020). Bez tego cala
-                      // cwiartka na jeden mecz byla dominujaca strategia
-                      // i runda zamieniala sie w loterie.
-                      // W 1. kolejce rundy wszyscy maja pelne konto, wiec
-                      // stale sa dokladne. Pozniej limity sie rozjada -
-                      // strona pokazuje gorny pulap, prawdziwy limit jest
-                      // w poniedzialkowej tabeli, a bramka jest import.
-const RULETKA_MAX = 2500; // limit RULETKI na kolejke = 1/10 limitu kolejki
-                      // (jaga.limit_wyniku, migracja 018). Osobna, mala
-                      // pula: jedno trafienie za kurs 8-60 nie moze
-                      // konczyc rundy. Stawki ruletki licza sie tez do
-                      // cwiartki (limit_gracza sumuje obie nogi).
+// LIMITY GRACZA (23.10.2026, po K12: strona pokazywala wszystkim 25 000,
+// a limit gracza pod kreska byl nizszy - nadwyzke przycinal dopiero
+// import; graczom nad kreska strona z kolei zanizala limit).
+// Teraz generator wpisuje do LIMITY prawdziwe limity kazdego aktywnego konta prosto z bazy: [limit_gracza, limit_meczu, limit_wyniku].
+// Klucz = FNV-1a z klucz_nicka() - ta sama normalizacja co import_typy.py
+// (bez spacji, wielkosci liter i ogonkow). Hash to TYLKO zaciemnienie
+// (imiona nie leza na stronie otwartym tekstem), nie ochrona.
+// Nick spoza LIMITY = nowe konto = LIMIT_NOWY (limit_gracza dla pustego konta).
+//   PULA        - limit NA KOLEJKE = 1/4 konta (jaga.limit_gracza)
+//   NA_MECZ     - limit NA JEDEN MECZ = 1/2 limitu kolejki (limit_meczu, migr. 020)
+//   RULETKA_MAX - limit RULETKI = 1/10 limitu kolejki (limit_wyniku, migr. 018);
+//                 stawki ruletki licza sie tez do cwiartki (obie nogi).
+// Zmiana imienia NIE przycina stawek po cichu (literowka w trakcie pisania
+// zjadalaby kupon) - nadwyzka blokuje wysylke z jawnym komunikatem.
+let PULA = LIMIT_NOWY[0], NA_MECZ = LIMIT_NOWY[1], RULETKA_MAX = LIMIT_NOWY[2];
+function kluczNicka(s){
+  return (s || "").trim().toLowerCase().normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "").replace(/\u0142/g, "l").replace(/[^a-z0-9]/g, "");
+}
+function fnv(s){
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(16);
+}
+let ZNANE_KONTO = false;
+function ustawLimity(imie){
+  const k = kluczNicka(imie);
+  const l = k ? LIMITY[fnv(k)] : null;
+  ZNANE_KONTO = !!l;
+  [PULA, NA_MECZ, RULETKA_MAX] = l || LIMIT_NOWY;
+}
+function nadLimitem(){
+  const znaki = stan.st.reduce((s, x, i) => stan.typ[i] !== null ? s + (+x || 0) : s, 0);
+  const rul = stan.rt.reduce((s, x, i) => stan.typ[i] !== null ? s + (+x || 0) : s, 0);
+  if (stan.st.some((x, i) => stan.typ[i] !== null && (+x || 0) > NA_MECZ))
+    return "Na jeden mecz masz maksymalnie " + fmt(NA_MECZ) + " żetonów - zmniejsz stawkę.";
+  if (rul > RULETKA_MAX)
+    return "Na ruletkę masz " + fmt(RULETKA_MAX) + " żetonów, a rozdane " + fmt(rul) + " - zmniejsz stawki ruletki.";
+  if (znaki + rul > PULA)
+    return "Twój limit na tę kolejkę to " + fmt(PULA) + " żetonów, a rozdane " + fmt(znaki + rul) + " - zmniejsz stawki.";
+  return "";
+}
 const fmt = n => n.toLocaleString("pl-PL");
 const KEY = "typer_r3_" + KOLEJKA.replace(/\W/g, "");   // r3: ruletka; starszy zapis ignorowany
 const N = MECZE.length;
@@ -169,6 +199,7 @@ function zapisz(){ try{ localStorage.setItem(KEY, JSON.stringify(stan)); }catch(
     const s = JSON.parse(localStorage.getItem(KEY) || "null");
     if(!s || !Array.isArray(s.typ) || s.typ.length !== N) return;
     stan.imie = s.imie || ""; stan.typ = s.typ;
+    ustawLimity(stan.imie);   // przyciecie ponizej liczy sie od limitu TEGO gracza
     stan.hg = s.hg || stan.hg; stan.ag = s.ag || stan.ag;
     stan.st = (Array.isArray(s.st) && s.st.length === N) ? s.st : stan.st;
     // Defensywne przyciecie odtworzonych stawek do AKTUALNYCH limitow -
@@ -386,15 +417,40 @@ MECZE.forEach((m, i) => {
   list.appendChild(box);
 });
 
+// Po zmianie imienia: nowe sufity na kafelkach i w liczniku. Stawek nie
+// ruszamy - nadwyzke pokazuje sprawdz() i blokuje wysylke.
+function odswiezLimity(){
+  document.querySelectorAll("#list .m").forEach(box => {
+    const stx = box.querySelector(".exact .stx");
+    if (stx) stx.textContent = "żetony (maks " + fmt(NA_MECZ) + "):";
+    const ist = box.querySelector("input.st");
+    if (ist) ist.max = NA_MECZ;
+    const rst = box.querySelector("input.rst");
+    if (rst) rst.max = RULETKA_MAX;
+  });
+  pula();
+}
 $("who").value = stan.imie;
+ustawLimity(stan.imie);
+odswiezLimity();
 $("who").addEventListener("input", e => {
-  stan.imie = e.target.value; e.target.classList.remove("err"); zapisz(); sprawdz();
+  stan.imie = e.target.value; e.target.classList.remove("err");
+  ustawLimity(stan.imie); odswiezLimity();
+  zapisz(); sprawdz();
 });
 
 function sprawdz(){
   const ile = stan.typ.filter(v => v !== null).length;
-  const ok = ile >= 1 && stan.imie.trim().length > 0 && !zamkniete;
+  // Nadwyzka ponad limit TEGO gracza blokuje wysylke - kupon ma wyjsc
+  // ze strony taki, jaki zostanie rozliczony (import nie ma czego przycinac).
+  const nad = nadLimitem();
+  const ok = ile >= 1 && stan.imie.trim().length > 0 && !zamkniete && !nad;
   $("go").disabled = !ok; $("copy").disabled = !ok;
+  if (nad && !zamkniete) {
+    $("hint").classList.add("wazne");
+    $("hint").textContent = nad;
+    return;
+  }
   // Typy sa, imienia nie ma: pole imienia jest na gorze, a gracz wlasnie
   // skonczyl na dole strony - blady hint nie wystarcza (wpadka z testu
   // na zywo 10.08). Czerwona ramka na polu + wyrazna wskazowka ze strzalka.
@@ -512,9 +568,12 @@ $("reset").addEventListener("click", () => {
 function pula(){
   const suma = stan.st.reduce((s, x) => s + (+x || 0), 0);
   const rul  = stan.rt.reduce((s, x) => s + (+x || 0), 0);
-  $("pula").textContent = "Limit na tę kolejkę: rozdane " + fmt(suma + rul) + " / " + fmt(PULA)
-    + " · zostało " + fmt(PULA - suma - rul) + " · maks " + fmt(NA_MECZ) + " na jeden mecz"
+  const kto = !stan.imie.trim() ? "Wpisz imię, a pokażę Twój limit. Na start rundy: "
+            : (ZNANE_KONTO ? "Twój limit na tę kolejkę: " : "Nowe konto - limit na tę kolejkę: ");
+  $("pula").textContent = kto + "rozdane " + fmt(suma + rul) + " / " + fmt(PULA)
+    + " · zostało " + fmt(Math.max(0, PULA - suma - rul)) + " · maks " + fmt(NA_MECZ) + " na jeden mecz"
     + (JEST_RULETKA ? " · ruletka: " + fmt(rul) + " / " + fmt(RULETKA_MAX) : "");
+  sprawdz();   // zmiana stawek musi od razu zdjac (albo nalozyc) blokade nadwyzki
 }
 pula();
 zegar();
